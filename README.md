@@ -1,0 +1,147 @@
+# ai-token-exporter
+
+`ai-token-exporter` exposes local AI coding tool token usage as Prometheus metrics.
+
+It reads session logs from:
+
+- Claude Code
+- Codex CLI
+- GitHub Copilot CLI
+- GitHub Copilot Chat sessions from VS Code-compatible editors
+
+The exporter keeps an in-memory snapshot and serves it at `GET /metrics`. Scrapes do not read session files from disk.
+
+## Install
+
+Build from source:
+
+```bash
+go install github.com/jimyag/ai-token-exporter/cmd/ai-token-exporter@latest
+```
+
+Run from the repository:
+
+```bash
+go run ./cmd/ai-token-exporter
+```
+
+Docker:
+
+```bash
+docker run --rm -p 9108:9108 \
+  -v "$HOME/.claude:/home/nonroot/.claude:ro" \
+  -v "$HOME/.codex:/home/nonroot/.codex:ro" \
+  -v "$HOME/.copilot:/home/nonroot/.copilot:ro" \
+  -v "$HOME/Library/Application Support:/home/nonroot/Library/Application Support:ro" \
+  ghcr.io/jimyag/ai-token-exporter:latest
+```
+
+## Usage
+
+```bash
+ai-token-exporter \
+  --listen=:9108 \
+  --scan-interval=30s \
+  --enabled=claude_code,codex_cli,copilot_cli,github_copilot \
+  --include-session-labels=true
+```
+
+Check metrics:
+
+```bash
+curl localhost:9108/metrics
+```
+
+Show version metadata:
+
+```bash
+ai-token-exporter --version
+```
+
+`--version` is provided by `github.com/jimmicro/version`. Release builds inject the git tag and build time through GoReleaser ldflags.
+
+## Configuration
+
+Flags can be set with environment variables:
+
+| Flag | Environment variable | Default |
+| --- | --- | --- |
+| `--listen` | `AI_TOKEN_EXPORTER_LISTEN` | `:9108` |
+| `--scan-interval` | `AI_TOKEN_EXPORTER_SCAN_INTERVAL` | `30s` |
+| `--enabled` | `AI_TOKEN_EXPORTER_ENABLED` | `claude_code,codex_cli,copilot_cli,github_copilot` |
+| `--include-session-labels` | `AI_TOKEN_EXPORTER_INCLUDE_SESSION_LABELS` | `true` |
+| `--claude-dir` | `AI_TOKEN_EXPORTER_CLAUDE_DIR` | `~/.claude/projects` |
+| `--codex-dir` | `AI_TOKEN_EXPORTER_CODEX_DIR` | `~/.codex` |
+| `--copilot-dir` | `AI_TOKEN_EXPORTER_COPILOT_DIR` | `~/.copilot` |
+
+Default source locations:
+
+- Claude Code: `~/.claude/projects/*/*.jsonl`
+- Codex CLI: `~/.codex/sessions/**/*.jsonl`
+- Copilot CLI: `~/.copilot/session-state/**/*.jsonl`, `~/.copilot/history-session-state/**/*.jsonl`
+- GitHub Copilot Chat: `~/Library/Application Support/{Code,Code - Insiders,Cursor,Windsurf,VSCodium,Positron,Antigravity}/User/workspaceStorage/*/chatSessions/*.json`
+
+## Metrics
+
+All usage metrics are gauges because local log snapshots can decrease when files are removed, compacted, or de-duplicated differently.
+
+```prometheus
+ai_token_exporter_tokens{tool,model,session_id,project_id,token_type}
+ai_token_exporter_messages{tool,model,session_id,project_id,role}
+ai_token_exporter_tool_calls{tool,model,session_id,project_id}
+ai_token_exporter_sessions{tool}
+ai_token_exporter_source_files{tool}
+ai_token_exporter_source_parse_errors{tool}
+ai_token_exporter_last_scan_timestamp_seconds
+ai_token_exporter_last_successful_scan_timestamp_seconds
+ai_token_exporter_scan_duration_seconds
+ai_token_exporter_last_scan_success
+ai_token_exporter_build_info{version,commit}
+```
+
+Label values:
+
+- `tool`: `claude_code`, `codex_cli`, `copilot_cli`, `github_copilot`
+- `token_type`: `input`, `output`, `reasoning`, `cache_creation`, `cache_read`, `cached`
+- `role`: `user`, `assistant`
+- `model`: normalized model name, falling back through tool defaults before `unknown`
+- `session_id` and `project_id`: SHA-256 hashes; raw paths, prompts, and session titles are not exposed
+
+## Prometheus
+
+Example scrape config:
+
+```yaml
+scrape_configs:
+  - job_name: ai-token-exporter
+    static_configs:
+      - targets: ["localhost:9108"]
+```
+
+## Release
+
+Releases are published when pushing a tag that starts with `v`.
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The release workflow uses GoReleaser to publish:
+
+- Linux, macOS, and Windows binaries for `amd64` and `arm64`
+- GitHub release archives
+- Multi-arch container image: `ghcr.io/jimyag/ai-token-exporter:<tag>` and `latest`
+
+Local release dry-run:
+
+```bash
+goreleaser release --snapshot --clean
+```
+
+## Development
+
+```bash
+go test ./...
+go vet ./...
+```

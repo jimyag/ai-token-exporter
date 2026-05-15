@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/jimmicro/version"
 	"github.com/jimyag/ai-token-exporter/internal/analyzer"
 	"github.com/jimyag/ai-token-exporter/internal/analyzer/claude"
 	"github.com/jimyag/ai-token-exporter/internal/analyzer/codex"
