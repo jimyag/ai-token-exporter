@@ -16,6 +16,7 @@ import (
 	"github.com/jimyag/ai-token-exporter/internal/analyzer/codex"
 	"github.com/jimyag/ai-token-exporter/internal/analyzer/copilotcli"
 	"github.com/jimyag/ai-token-exporter/internal/analyzer/copilotvscode"
+	"github.com/jimyag/ai-token-exporter/internal/analyzer/gemini"
 	"github.com/jimyag/ai-token-exporter/internal/config"
 	"github.com/jimyag/ai-token-exporter/internal/model"
 	"github.com/jimyag/ai-token-exporter/internal/scanner"
@@ -68,6 +69,9 @@ func buildAnalyzers(cfg config.Config) []analyzer.Analyzer {
 	}
 	if cfg.Enabled[model.ToolGitHubCopilot] {
 		analyzers = append(analyzers, copilotvscode.New())
+	}
+	if cfg.Enabled[model.ToolGeminiCLI] {
+		analyzers = append(analyzers, gemini.New(cfg.GeminiDir))
 	}
 	return analyzers
 }

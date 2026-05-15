@@ -7,6 +7,7 @@ const (
 	ToolCodexCLI      = "codex_cli"
 	ToolCopilotCLI    = "copilot_cli"
 	ToolGitHubCopilot = "github_copilot"
+	ToolGeminiCLI     = "gemini_cli"
 
 	RoleUser      = "user"
 	RoleAssistant = "assistant"

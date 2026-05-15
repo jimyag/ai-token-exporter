@@ -8,6 +8,7 @@ Supported tools for v1:
 
 - Claude Code
 - Codex CLI
+- Gemini CLI
 - GitHub Copilot CLI
 - GitHub Copilot Chat sessions from VS Code-compatible editors
 
@@ -33,10 +34,11 @@ ai_token_exporter_build_info{version,commit}
 
 Label values:
 
-- `tool`: `claude_code`, `codex_cli`, `copilot_cli`, `github_copilot`
+- `tool`: `claude_code`, `codex_cli`, `copilot_cli`, `github_copilot`, `gemini_cli`
 - `token_type`: `input`, `output`, `reasoning`, `cache_creation`, `cache_read`, `cached`
 - `role`: `user`, `assistant`
 - `model`: normalized model name, falling back through tool defaults before `unknown`
+
 Session and project identifiers are intentionally not exposed as metric labels. The exporter aggregates those locally into `tool` and `model` series to keep Prometheus cardinality low and avoid leaking local activity shape.
 
 Metric semantics:
@@ -69,6 +71,7 @@ Tool-specific defaults:
 
 - Claude Code: read known Claude settings files when available, then fall back to `unknown`.
 - Codex CLI: read Codex config from the user's Codex home when available; if no configured model is found, use the current Codex CLI fallback default used by the analyzer.
+- Gemini CLI: read model from each Gemini message first, then fall back to `~/.gemini/settings.json`, then `unknown`.
 - Copilot CLI: read model from session start/context events first, then any Copilot CLI config if available, then `unknown`.
 - GitHub Copilot Chat: read `modelId` from each request first; if missing, use any session/editor configuration discovered locally, then `unknown`.
 
@@ -80,6 +83,7 @@ Default source locations:
 
 - Claude Code: `~/.claude/projects/*/*.jsonl`
 - Codex CLI: `~/.codex/sessions/**/*.jsonl`
+- Gemini CLI: `~/.gemini/tmp/**/chats/*.{json,jsonl}`
 - Copilot CLI: `~/.copilot/session-state/**/*.jsonl`, `~/.copilot/history-session-state/**/*.jsonl`
 - GitHub Copilot Chat: `~/Library/Application Support/{Code,Code - Insiders,Cursor,Windsurf,VSCodium,Positron,Antigravity}/User/workspaceStorage/*/chatSessions/*.json`
 
@@ -92,6 +96,7 @@ AI_TOKEN_EXPORTER_ENABLED
 AI_TOKEN_EXPORTER_CLAUDE_DIR
 AI_TOKEN_EXPORTER_CODEX_DIR
 AI_TOKEN_EXPORTER_COPILOT_DIR
+AI_TOKEN_EXPORTER_GEMINI_DIR
 ```
 
 Default CLI:
@@ -100,7 +105,7 @@ Default CLI:
 ai-token-exporter \
   --listen=:9108 \
   --scan-interval=30s \
-  --enabled=claude_code,codex_cli,copilot_cli,github_copilot
+  --enabled=claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli
 ```
 
 ## Architecture
@@ -116,6 +121,7 @@ internal/scanner/
 internal/analyzer/
 internal/analyzer/claude/
 internal/analyzer/codex/
+internal/analyzer/gemini/
 internal/analyzer/copilotcli/
 internal/analyzer/copilotvscode/
 internal/model/
@@ -185,6 +191,17 @@ Codex CLI:
 - Set `reasoning = reasoning_output_tokens`.
 - Extract model from token event, turn context, or metadata before falling back to config/defaults.
 
+Gemini CLI:
+
+- Parse `~/.gemini/tmp/**/chats/*.{json,jsonl}`.
+- For JSON files, parse the top-level `messages` list.
+- For JSONL files, ignore `$set` updates and valid non-message lines, keep the latest message per `id`, and preserve first-seen order.
+- Count user messages with role `user`.
+- Count Gemini assistant messages with role `assistant`.
+- Extract model from the Gemini message `model` field, then fall back to `~/.gemini/settings.json`.
+- Map `tokens.input` to input, `tokens.output` to output, `tokens.thoughts` to reasoning, and `tokens.cached` to cached.
+- Count tool calls from `toolCalls`.
+
 Copilot CLI:
 
 - Parse `session.start`, `session.model_change`, `user.message`, `assistant.*`, `tool.execution_*`, and shutdown metrics.
@@ -207,6 +224,7 @@ Required tests:
 - Claude parser handles usage/cache fields and de-duplication.
 - Codex parser handles `last_token_usage` and `total_token_usage` deltas.
 - Copilot CLI parser prefers shutdown metrics when available.
+- Gemini CLI parser handles JSON sessions, JSONL latest-message updates, token fields, and tool calls.
 - GitHub Copilot parser estimates tokens and normalizes `modelId`.
 - Aggregation handles multiple sessions and models.
 - Missing model falls back through default config and finally `unknown`.

@@ -6,6 +6,7 @@ It reads session logs from:
 
 - Claude Code
 - Codex CLI
+- Gemini CLI
 - GitHub Copilot CLI
 - GitHub Copilot Chat sessions from VS Code-compatible editors
 
@@ -31,6 +32,7 @@ Docker:
 docker run --rm -p 9108:9108 \
   -v "$HOME/.claude:/home/nonroot/.claude:ro" \
   -v "$HOME/.codex:/home/nonroot/.codex:ro" \
+  -v "$HOME/.gemini:/home/nonroot/.gemini:ro" \
   -v "$HOME/.copilot:/home/nonroot/.copilot:ro" \
   -v "$HOME/Library/Application Support:/home/nonroot/Library/Application Support:ro" \
   ghcr.io/jimyag/ai-token-exporter:latest
@@ -42,7 +44,7 @@ docker run --rm -p 9108:9108 \
 ai-token-exporter \
   --listen=:9108 \
   --scan-interval=30s \
-  --enabled=claude_code,codex_cli,copilot_cli,github_copilot
+  --enabled=claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli
 ```
 
 Check metrics:
@@ -67,15 +69,17 @@ Flags can be set with environment variables:
 | --- | --- | --- |
 | `--listen` | `AI_TOKEN_EXPORTER_LISTEN` | `:9108` |
 | `--scan-interval` | `AI_TOKEN_EXPORTER_SCAN_INTERVAL` | `30s` |
-| `--enabled` | `AI_TOKEN_EXPORTER_ENABLED` | `claude_code,codex_cli,copilot_cli,github_copilot` |
+| `--enabled` | `AI_TOKEN_EXPORTER_ENABLED` | `claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli` |
 | `--claude-dir` | `AI_TOKEN_EXPORTER_CLAUDE_DIR` | `~/.claude/projects` |
 | `--codex-dir` | `AI_TOKEN_EXPORTER_CODEX_DIR` | `~/.codex` |
 | `--copilot-dir` | `AI_TOKEN_EXPORTER_COPILOT_DIR` | `~/.copilot` |
+| `--gemini-dir` | `AI_TOKEN_EXPORTER_GEMINI_DIR` | `~/.gemini/tmp` |
 
 Default source locations:
 
 - Claude Code: `~/.claude/projects/*/*.jsonl`
 - Codex CLI: `~/.codex/sessions/**/*.jsonl`
+- Gemini CLI: `~/.gemini/tmp/**/chats/*.{json,jsonl}`
 - Copilot CLI: `~/.copilot/session-state/**/*.jsonl`, `~/.copilot/history-session-state/**/*.jsonl`
 - GitHub Copilot Chat: `~/Library/Application Support/{Code,Code - Insiders,Cursor,Windsurf,VSCodium,Positron,Antigravity}/User/workspaceStorage/*/chatSessions/*.json`
 
@@ -99,10 +103,11 @@ ai_token_exporter_build_info{version,commit}
 
 Label values:
 
-- `tool`: `claude_code`, `codex_cli`, `copilot_cli`, `github_copilot`
+- `tool`: `claude_code`, `codex_cli`, `copilot_cli`, `github_copilot`, `gemini_cli`
 - `token_type`: `input`, `output`, `reasoning`, `cache_creation`, `cache_read`, `cached`
 - `role`: `user`, `assistant`
 - `model`: normalized model name, falling back through tool defaults before `unknown`
+
 Session and project identifiers are intentionally not exposed as labels. The exporter aggregates those locally into `tool` and `model` series to keep Prometheus cardinality low.
 
 ## Prometheus
