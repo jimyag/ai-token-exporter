@@ -21,9 +21,9 @@ func (s staticProvider) Snapshot() model.Snapshot {
 func TestMetricsEndpointUsesPrometheusTextFormat(t *testing.T) {
 	provider := staticProvider{snapshot: model.Snapshot{
 		Aggregates: map[model.SeriesKey]model.Aggregate{
-			{Tool: model.ToolCodexCLI, Model: "gpt-5", SessionID: "s1", ProjectID: "p1"}: {
+			{Tool: model.ToolCodexCLI, Model: "gpt-5"}: {
 				Tokens:   model.TokenStats{Input: 10, Output: 5},
-				Messages: map[string]uint64{model.RoleAssistant: 1},
+				Messages: map[string]uint64{model.RoleAssistant: 3},
 			},
 		},
 		Tools: map[string]model.ToolSnapshot{
@@ -35,7 +35,7 @@ func TestMetricsEndpointUsesPrometheusTextFormat(t *testing.T) {
 		Version:            "test",
 		Commit:             "abc",
 	}}
-	srv := New(":0", provider, true)
+	srv := New(":0", provider)
 	req := httptest.NewRequest("GET", "/metrics", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler.ServeHTTP(rec, req)
@@ -43,8 +43,8 @@ func TestMetricsEndpointUsesPrometheusTextFormat(t *testing.T) {
 	body := string(bodyBytes)
 	for _, want := range []string{
 		"# HELP ai_token_exporter_tokens",
-		`ai_token_exporter_tokens{model="gpt-5",project_id="p1",session_id="s1",token_type="input",tool="codex_cli"} 10`,
-		`ai_token_exporter_messages{model="gpt-5",project_id="p1",role="assistant",session_id="s1",tool="codex_cli"} 1`,
+		`ai_token_exporter_tokens{model="gpt-5",token_type="input",tool="codex_cli"} 10`,
+		`ai_token_exporter_messages{model="gpt-5",role="assistant",tool="codex_cli"} 3`,
 		`ai_token_exporter_build_info{commit="abc",version="test"} 1`,
 	} {
 		if !strings.Contains(body, want) {

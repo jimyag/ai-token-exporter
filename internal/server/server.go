@@ -8,9 +8,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func New(addr string, provider metrics.SnapshotProvider, includeSessionLabels bool) *http.Server {
+func New(addr string, provider metrics.SnapshotProvider) *http.Server {
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(metrics.NewCollector(provider, includeSessionLabels))
+	registry.MustRegister(metrics.NewCollector(provider))
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))

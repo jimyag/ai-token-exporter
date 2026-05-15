@@ -41,7 +41,6 @@ func TestScanAggregatesRecordsAndParseErrors(t *testing.T) {
 					Tool:      model.ToolCodexCLI,
 					Model:     "gpt-5",
 					SessionID: "s1",
-					ProjectID: "p1",
 					Role:      model.RoleAssistant,
 					Tokens: model.TokenStats{
 						Input:  10,
@@ -53,7 +52,6 @@ func TestScanAggregatesRecordsAndParseErrors(t *testing.T) {
 					Tool:      model.ToolCodexCLI,
 					Model:     "",
 					SessionID: "s1",
-					ProjectID: "p1",
 					Role:      model.RoleUser,
 				},
 			},
@@ -65,11 +63,11 @@ func TestScanAggregatesRecordsAndParseErrors(t *testing.T) {
 	if stat.SourceFiles != 2 || stat.ParseErrors != 1 || stat.Sessions != 1 {
 		t.Fatalf("unexpected tool stat: %+v", stat)
 	}
-	key := model.SeriesKey{Tool: model.ToolCodexCLI, Model: "gpt-5", SessionID: "s1", ProjectID: "p1"}
+	key := model.SeriesKey{Tool: model.ToolCodexCLI, Model: "gpt-5"}
 	if snapshot.Aggregates[key].Tokens.Input != 10 || snapshot.Aggregates[key].ToolCalls != 2 {
 		t.Fatalf("assistant aggregate missing: %+v", snapshot.Aggregates[key])
 	}
-	unknown := model.SeriesKey{Tool: model.ToolCodexCLI, Model: model.UnknownModel, SessionID: "s1", ProjectID: "p1"}
+	unknown := model.SeriesKey{Tool: model.ToolCodexCLI, Model: model.UnknownModel}
 	if snapshot.Aggregates[unknown].Messages[model.RoleUser] != 1 {
 		t.Fatalf("unknown model user message missing: %+v", snapshot.Aggregates[unknown])
 	}

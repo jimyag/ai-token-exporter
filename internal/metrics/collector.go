@@ -12,8 +12,7 @@ type SnapshotProvider interface {
 }
 
 type Collector struct {
-	provider             SnapshotProvider
-	includeSessionLabels bool
+	provider SnapshotProvider
 
 	tokensDesc       *prometheus.Desc
 	messagesDesc     *prometheus.Desc
@@ -28,25 +27,21 @@ type Collector struct {
 	buildInfoDesc    *prometheus.Desc
 }
 
-func NewCollector(provider SnapshotProvider, includeSessionLabels bool) *Collector {
+func NewCollector(provider SnapshotProvider) *Collector {
 	seriesLabels := []string{"tool", "model"}
-	if includeSessionLabels {
-		seriesLabels = append(seriesLabels, "session_id", "project_id")
-	}
 	return &Collector{
-		provider:             provider,
-		includeSessionLabels: includeSessionLabels,
-		tokensDesc:           prometheus.NewDesc("ai_token_exporter_tokens", "Token usage in the current parsed snapshot.", append(seriesLabels, "token_type"), nil),
-		messagesDesc:         prometheus.NewDesc("ai_token_exporter_messages", "Messages in the current parsed snapshot.", append(seriesLabels, "role"), nil),
-		toolCallsDesc:        prometheus.NewDesc("ai_token_exporter_tool_calls", "Tool calls in the current parsed snapshot.", seriesLabels, nil),
-		sessionsDesc:         prometheus.NewDesc("ai_token_exporter_sessions", "Distinct sessions discovered in the latest scan.", []string{"tool"}, nil),
-		sourceFilesDesc:      prometheus.NewDesc("ai_token_exporter_source_files", "Source files discovered in the latest scan.", []string{"tool"}, nil),
-		parseErrorsDesc:      prometheus.NewDesc("ai_token_exporter_source_parse_errors", "Source files that failed to parse in the latest scan.", []string{"tool"}, nil),
-		lastScanDesc:         prometheus.NewDesc("ai_token_exporter_last_scan_timestamp_seconds", "Unix timestamp when the latest scan finished.", nil, nil),
-		lastSuccessDesc:      prometheus.NewDesc("ai_token_exporter_last_successful_scan_timestamp_seconds", "Unix timestamp when the latest successful scan finished.", nil, nil),
-		scanDurationDesc:     prometheus.NewDesc("ai_token_exporter_scan_duration_seconds", "Duration of the latest scan in seconds.", nil, nil),
-		lastScanSuccess:      prometheus.NewDesc("ai_token_exporter_last_scan_success", "Whether the latest scan completed without fatal scanner errors.", nil, nil),
-		buildInfoDesc:        prometheus.NewDesc("ai_token_exporter_build_info", "Build information for ai-token-exporter.", []string{"version", "commit"}, nil),
+		provider:         provider,
+		tokensDesc:       prometheus.NewDesc("ai_token_exporter_tokens", "Token usage in the current parsed snapshot.", append(seriesLabels, "token_type"), nil),
+		messagesDesc:     prometheus.NewDesc("ai_token_exporter_messages", "Messages in the current parsed snapshot.", append(seriesLabels, "role"), nil),
+		toolCallsDesc:    prometheus.NewDesc("ai_token_exporter_tool_calls", "Tool calls in the current parsed snapshot.", seriesLabels, nil),
+		sessionsDesc:     prometheus.NewDesc("ai_token_exporter_sessions", "Distinct sessions discovered in the latest scan.", []string{"tool"}, nil),
+		sourceFilesDesc:  prometheus.NewDesc("ai_token_exporter_source_files", "Source files discovered in the latest scan.", []string{"tool"}, nil),
+		parseErrorsDesc:  prometheus.NewDesc("ai_token_exporter_source_parse_errors", "Source files that failed to parse in the latest scan.", []string{"tool"}, nil),
+		lastScanDesc:     prometheus.NewDesc("ai_token_exporter_last_scan_timestamp_seconds", "Unix timestamp when the latest scan finished.", nil, nil),
+		lastSuccessDesc:  prometheus.NewDesc("ai_token_exporter_last_successful_scan_timestamp_seconds", "Unix timestamp when the latest successful scan finished.", nil, nil),
+		scanDurationDesc: prometheus.NewDesc("ai_token_exporter_scan_duration_seconds", "Duration of the latest scan in seconds.", nil, nil),
+		lastScanSuccess:  prometheus.NewDesc("ai_token_exporter_last_scan_success", "Whether the latest scan completed without fatal scanner errors.", nil, nil),
+		buildInfoDesc:    prometheus.NewDesc("ai_token_exporter_build_info", "Build information for ai-token-exporter.", []string{"version", "commit"}, nil),
 	}
 }
 
@@ -101,11 +96,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (c *Collector) seriesLabelValues(key model.SeriesKey) []string {
-	values := []string{key.Tool, key.Model}
-	if c.includeSessionLabels {
-		values = append(values, key.SessionID, key.ProjectID)
-	}
-	return values
+	return []string{key.Tool, key.Model}
 }
 
 func tokenValues(tokens model.TokenStats) map[string]uint64 {

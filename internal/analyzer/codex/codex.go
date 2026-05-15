@@ -72,7 +72,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 	defer file.Close()
 
 	sessionID := hash.Sum(source.Path)
-	projectID := hash.Sum("codex-global")
 	currentModel := a.DefaultModel
 	var previous *tokenUsage
 	var toolCalls uint64
@@ -116,7 +115,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 						Tool:      a.Name(),
 						Model:     analyzer.ResolveModel(currentModel, a.DefaultModel),
 						SessionID: sessionID,
-						ProjectID: projectID,
 						Role:      role,
 					})
 				}
@@ -151,7 +149,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 				Tool:      a.Name(),
 				Model:     analyzer.ResolveModel(currentModel, a.DefaultModel),
 				SessionID: sessionID,
-				ProjectID: projectID,
 				Role:      model.RoleAssistant,
 				Tokens: model.TokenStats{
 					Input:     usage.InputTokens - min(usage.InputTokens, usage.CachedInputTokens),

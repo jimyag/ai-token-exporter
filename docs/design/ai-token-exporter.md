@@ -18,9 +18,9 @@ The exporter does not calculate cost in v1. Model pricing changes often and shou
 All usage metrics are gauges. The source of truth is local log files, so values can decrease when files are removed, sessions are compacted, parser behavior changes, or de-duplication corrects earlier data.
 
 ```prometheus
-ai_token_exporter_tokens{tool,model,session_id,project_id,token_type}
-ai_token_exporter_messages{tool,model,session_id,project_id,role}
-ai_token_exporter_tool_calls{tool,model,session_id,project_id}
+ai_token_exporter_tokens{tool,model,token_type}
+ai_token_exporter_messages{tool,model,role}
+ai_token_exporter_tool_calls{tool,model}
 ai_token_exporter_sessions{tool}
 ai_token_exporter_source_files{tool}
 ai_token_exporter_source_parse_errors{tool}
@@ -37,10 +37,7 @@ Label values:
 - `token_type`: `input`, `output`, `reasoning`, `cache_creation`, `cache_read`, `cached`
 - `role`: `user`, `assistant`
 - `model`: normalized model name, falling back through tool defaults before `unknown`
-- `session_id`: SHA-256 hash of the tool session or conversation identifier
-- `project_id`: SHA-256 hash of the project/workspace identifier, or a stable tool-level fallback when unavailable
-
-`session_id` and `project_id` are included by default. They must never contain raw prompts, paths, repository names, or session titles.
+Session and project identifiers are intentionally not exposed as metric labels. The exporter aggregates those locally into `tool` and `model` series to keep Prometheus cardinality low and avoid leaking local activity shape.
 
 Metric semantics:
 
@@ -92,7 +89,6 @@ Config overrides:
 AI_TOKEN_EXPORTER_LISTEN
 AI_TOKEN_EXPORTER_SCAN_INTERVAL
 AI_TOKEN_EXPORTER_ENABLED
-AI_TOKEN_EXPORTER_INCLUDE_SESSION_LABELS
 AI_TOKEN_EXPORTER_CLAUDE_DIR
 AI_TOKEN_EXPORTER_CODEX_DIR
 AI_TOKEN_EXPORTER_COPILOT_DIR
@@ -104,8 +100,7 @@ Default CLI:
 ai-token-exporter \
   --listen=:9108 \
   --scan-interval=30s \
-  --enabled=claude_code,codex_cli,copilot_cli,github_copilot \
-  --include-session-labels=true
+  --enabled=claude_code,codex_cli,copilot_cli,github_copilot
 ```
 
 ## Architecture
@@ -156,7 +151,6 @@ type Record struct {
     Tool         string
     Model        string
     SessionID    string
-    ProjectID    string
     Role         string
     InputTokens  uint64
     OutputTokens uint64
@@ -168,7 +162,7 @@ type Record struct {
 }
 ```
 
-The scanner should aggregate by `tool`, `model`, `session_id`, and `project_id`.
+The scanner should aggregate exported metrics by `tool` and `model`. It may retain session hashes internally only to compute `ai_token_exporter_sessions{tool}`.
 
 ## Parser Notes
 

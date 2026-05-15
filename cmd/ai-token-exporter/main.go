@@ -41,7 +41,7 @@ func main() {
 	scn := scanner.New(buildAnalyzers(cfg), cfg.Version, cfg.Commit)
 	go scn.Run(ctx, cfg.ScanInterval)
 
-	srv := server.New(cfg.Listen, scn, cfg.IncludeSessionLabels)
+	srv := server.New(cfg.Listen, scn)
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

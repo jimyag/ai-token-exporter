@@ -83,10 +83,8 @@ func (s *Scanner) ScanOnce(ctx context.Context) model.Snapshot {
 					sessions[record.SessionID] = true
 				}
 				key := model.SeriesKey{
-					Tool:      record.Tool,
-					Model:     record.Model,
-					SessionID: record.SessionID,
-					ProjectID: record.ProjectID,
+					Tool:  record.Tool,
+					Model: record.Model,
 				}
 				agg := next.Aggregates[key]
 				if agg.Messages == nil {

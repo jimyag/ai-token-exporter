@@ -102,7 +102,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 	}
 
 	sessionRaw := strings.TrimSuffix(filepath.Base(source.Path), filepath.Ext(source.Path))
-	workspaceRaw := "copilot-global"
 	currentModel := a.DefaultModel
 	for _, item := range events {
 		if item.Type != "session.start" {
@@ -113,12 +112,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			sessionRaw = id
 		}
 		if contextMap, ok := data["context"].(map[string]any); ok {
-			if cwd, ok := contextMap["cwd"].(string); ok && cwd != "" {
-				workspaceRaw = cwd
-			}
-			if gitRoot, ok := contextMap["gitRoot"].(string); ok && gitRoot != "" {
-				workspaceRaw = gitRoot
-			}
 			if found := analyzer.ExtractModel(contextMap); found != "" {
 				currentModel = found
 			}
@@ -126,7 +119,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 	}
 
 	sessionID := hash.Sum(sessionRaw)
-	projectID := hash.Sum(workspaceRaw)
 	records := []model.Record{}
 	var current *turn
 
@@ -144,7 +136,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			Tool:      a.Name(),
 			Model:     analyzer.ResolveModel(current.Model, currentModel, a.DefaultModel),
 			SessionID: sessionID,
-			ProjectID: projectID,
 			Role:      model.RoleAssistant,
 			Tokens: model.TokenStats{
 				Input:     analyzer.CountTokens(current.UserText + "\n" + strings.Join(current.InputParts, "\n")),
@@ -181,7 +172,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 				Tool:      a.Name(),
 				Model:     analyzer.ResolveModel(currentModel, a.DefaultModel),
 				SessionID: sessionID,
-				ProjectID: projectID,
 				Role:      model.RoleUser,
 			})
 			current = &turn{Model: currentModel, UserText: text}

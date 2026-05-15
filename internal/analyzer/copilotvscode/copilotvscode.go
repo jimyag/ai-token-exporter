@@ -98,7 +98,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		sessionIDRaw = strings.TrimSuffix(filepath.Base(source.Path), filepath.Ext(source.Path))
 	}
 	sessionID := hash.Sum(sessionIDRaw)
-	projectID := hash.Sum("github-copilot-global")
 	records := make([]model.Record, 0, len(sess.Requests)*2)
 
 	for _, req := range sess.Requests {
@@ -140,14 +139,12 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			Tool:      a.Name(),
 			Model:     modelName,
 			SessionID: sessionID,
-			ProjectID: projectID,
 			Role:      model.RoleUser,
 		})
 		records = append(records, model.Record{
 			Tool:      a.Name(),
 			Model:     modelName,
 			SessionID: sessionID,
-			ProjectID: projectID,
 			Role:      model.RoleAssistant,
 			Tokens: model.TokenStats{
 				Input:  inputTokens,

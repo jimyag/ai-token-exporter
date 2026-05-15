@@ -42,8 +42,7 @@ docker run --rm -p 9108:9108 \
 ai-token-exporter \
   --listen=:9108 \
   --scan-interval=30s \
-  --enabled=claude_code,codex_cli,copilot_cli,github_copilot \
-  --include-session-labels=true
+  --enabled=claude_code,codex_cli,copilot_cli,github_copilot
 ```
 
 Check metrics:
@@ -69,7 +68,6 @@ Flags can be set with environment variables:
 | `--listen` | `AI_TOKEN_EXPORTER_LISTEN` | `:9108` |
 | `--scan-interval` | `AI_TOKEN_EXPORTER_SCAN_INTERVAL` | `30s` |
 | `--enabled` | `AI_TOKEN_EXPORTER_ENABLED` | `claude_code,codex_cli,copilot_cli,github_copilot` |
-| `--include-session-labels` | `AI_TOKEN_EXPORTER_INCLUDE_SESSION_LABELS` | `true` |
 | `--claude-dir` | `AI_TOKEN_EXPORTER_CLAUDE_DIR` | `~/.claude/projects` |
 | `--codex-dir` | `AI_TOKEN_EXPORTER_CODEX_DIR` | `~/.codex` |
 | `--copilot-dir` | `AI_TOKEN_EXPORTER_COPILOT_DIR` | `~/.copilot` |
@@ -86,9 +84,9 @@ Default source locations:
 All usage metrics are gauges because local log snapshots can decrease when files are removed, compacted, or de-duplicated differently.
 
 ```prometheus
-ai_token_exporter_tokens{tool,model,session_id,project_id,token_type}
-ai_token_exporter_messages{tool,model,session_id,project_id,role}
-ai_token_exporter_tool_calls{tool,model,session_id,project_id}
+ai_token_exporter_tokens{tool,model,token_type}
+ai_token_exporter_messages{tool,model,role}
+ai_token_exporter_tool_calls{tool,model}
 ai_token_exporter_sessions{tool}
 ai_token_exporter_source_files{tool}
 ai_token_exporter_source_parse_errors{tool}
@@ -105,7 +103,7 @@ Label values:
 - `token_type`: `input`, `output`, `reasoning`, `cache_creation`, `cache_read`, `cached`
 - `role`: `user`, `assistant`
 - `model`: normalized model name, falling back through tool defaults before `unknown`
-- `session_id` and `project_id`: SHA-256 hashes; raw paths, prompts, and session titles are not exposed
+Session and project identifiers are intentionally not exposed as labels. The exporter aggregates those locally into `tool` and `model` series to keep Prometheus cardinality low.
 
 ## Prometheus
 

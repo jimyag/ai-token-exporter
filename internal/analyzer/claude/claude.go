@@ -78,7 +78,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 	defer file.Close()
 
 	sessionID := hash.Sum(source.Path)
-	projectID := hash.Sum(filepath.Base(filepath.Dir(source.Path)))
 	seen := map[string]bool{}
 	var records []model.Record
 
@@ -132,7 +131,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			Tool:      a.Name(),
 			Model:     analyzer.ResolveModel(item.Message.Model, a.DefaultModel),
 			SessionID: sessionID,
-			ProjectID: projectID,
 			Role:      role,
 			Tokens:    tokens,
 			ToolCalls: countToolUse(item.Message.Content),

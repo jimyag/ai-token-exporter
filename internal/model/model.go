@@ -33,17 +33,14 @@ type Record struct {
 	Tool      string
 	Model     string
 	SessionID string
-	ProjectID string
 	Role      string
 	Tokens    TokenStats
 	ToolCalls uint64
 }
 
 type SeriesKey struct {
-	Tool      string
-	Model     string
-	SessionID string
-	ProjectID string
+	Tool  string
+	Model string
 }
 
 type Aggregate struct {
