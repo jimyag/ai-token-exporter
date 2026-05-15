@@ -1,0 +1,90 @@
+version: "3"
+
+vars:
+  BINARY: ai-token-exporter
+  LDFLAGS: "-s -w"
+
+tasks:
+  default:
+    desc: List all tasks
+    cmds:
+      - task --list-all
+    silent: true
+
+  deps:
+    desc: Install local development tools
+    cmds:
+      - go install honnef.co/go/tools/cmd/staticcheck@latest
+      - go install mvdan.cc/gofumpt@latest
+      - go install golang.org/x/tools/cmd/goimports@latest
+      - go install github.com/go-task/task/v3/cmd/task@latest
+      - go install github.com/goreleaser/goreleaser/v2@latest
+
+  fmt:
+    desc: Format Go code
+    cmds:
+      - gofumpt -w cmd internal
+      - goimports -w cmd internal
+
+  lint:
+    desc: Run staticcheck, formatting checks, goimports checks, and go vet
+    cmds:
+      - staticcheck ./...
+      - cmd: |
+          UNFORMATTED=$(gofmt -l .)
+          if [ -n "$UNFORMATTED" ]; then
+            echo "unformatted files (run: gofmt -w .):"
+            echo "$UNFORMATTED"
+            exit 1
+          fi
+      - cmd: |
+          UNFORMATTED=$(gofumpt -l .)
+          if [ -n "$UNFORMATTED" ]; then
+            echo "unformatted files (run: gofumpt -w .):"
+            echo "$UNFORMATTED"
+            exit 1
+          fi
+      - cmd: |
+          UNFORMATTED=$(goimports -l .)
+          if [ -n "$UNFORMATTED" ]; then
+            echo "unformatted files (run: goimports -w .):"
+            echo "$UNFORMATTED"
+            exit 1
+          fi
+      - go vet ./...
+
+  test:
+    desc: Run tests with the race detector and coverage
+    cmds:
+      - GORACE=atexit_sleep_ms=0 go test -v -trimpath -failfast -race -cover -coverprofile=coverage.txt ./...
+
+  build:
+    desc: Build the local binary into bin/
+    cmds:
+      - mkdir -p bin
+      - go build -trimpath -buildvcs=true -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}} ./cmd/{{.BINARY}}
+
+  run:
+    desc: Run the exporter locally
+    cmds:
+      - go run ./cmd/{{.BINARY}} {{.CLI_ARGS}}
+
+  docker-build:
+    desc: Build the local Docker image
+    cmds:
+      - docker build -t {{.BINARY}}:local .
+
+  release-check:
+    desc: Validate the GoReleaser configuration
+    cmds:
+      - goreleaser check
+
+  release-snapshot:
+    desc: Dry-run a GoReleaser release locally without publishing
+    cmds:
+      - goreleaser release --snapshot --clean
+
+  clean:
+    desc: Remove generated local build artifacts
+    cmds:
+      - rm -rf bin dist coverage.txt

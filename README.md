@@ -145,3 +145,15 @@ goreleaser release --snapshot --clean
 go test ./...
 go vet ./...
 ```
+
+With Task:
+
+```bash
+task deps
+task lint
+task test
+task build
+task run -- --listen=:9108
+task docker-build
+task release-snapshot
+```
