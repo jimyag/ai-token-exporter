@@ -34,7 +34,7 @@ docker run --rm -p 9108:9108 \
   -v "$HOME/.codex:/home/nonroot/.codex:ro" \
   -v "$HOME/.gemini:/home/nonroot/.gemini:ro" \
   -v "$HOME/.copilot:/home/nonroot/.copilot:ro" \
-  -v "$HOME/Library/Application Support:/home/nonroot/Library/Application Support:ro" \
+  -v "$HOME/Library/Application Support:/home/nonroot/.config:ro" \
   ghcr.io/jimyag/ai-token-exporter:latest
 ```
 
@@ -81,7 +81,7 @@ Default source locations:
 - Codex CLI: `~/.codex/sessions/**/*.jsonl`
 - Gemini CLI: `~/.gemini/tmp/**/chats/*.{json,jsonl}`
 - Copilot CLI: `~/.copilot/session-state/**/*.jsonl`, `~/.copilot/history-session-state/**/*.jsonl`
-- GitHub Copilot Chat: `~/Library/Application Support/{Code,Code - Insiders,Cursor,Windsurf,VSCodium,Positron,Antigravity}/User/workspaceStorage/*/chatSessions/*.json`
+- GitHub Copilot Chat: `{user config dir}/{Code,Code - Insiders,Cursor,Windsurf,VSCodium,Positron,Antigravity}/User/workspaceStorage/*/chatSessions/*.json`
 
 ## Metrics
 
@@ -107,6 +107,8 @@ Label values:
 - `token_type`: `input`, `output`, `reasoning`, `cache_creation`, `cache_read`, `cached`
 - `role`: `user`, `assistant`
 - `model`: normalized model name, falling back through tool defaults before `unknown`
+
+`input` is gross input, including cached input when the source reports it. `cached` is cache hit/reused input and does not include cache creation.
 
 Session and project identifiers are intentionally not exposed as labels. The exporter aggregates those locally into `tool` and `model` series to keep Prometheus cardinality low.
 

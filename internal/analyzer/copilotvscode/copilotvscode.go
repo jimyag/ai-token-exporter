@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/jimyag/ai-token-exporter/internal/analyzer"
 	"github.com/jimyag/ai-token-exporter/internal/hash"
@@ -21,10 +20,14 @@ type Analyzer struct {
 }
 
 func New() *Analyzer {
-	home, _ := os.UserHomeDir()
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		home, _ := os.UserHomeDir()
+		configDir = filepath.Join(home, "Library", "Application Support")
+	}
 	roots := make([]string, 0, len(forks))
 	for _, fork := range forks {
-		roots = append(roots, filepath.Join(home, "Library", "Application Support", fork, "User", "workspaceStorage"))
+		roots = append(roots, filepath.Join(configDir, fork, "User", "workspaceStorage"))
 	}
 	return &Analyzer{Roots: roots}
 }
@@ -152,7 +155,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			},
 			ToolCalls: toolCalls,
 		})
-		_ = time.UnixMilli(req.Timestamp)
 	}
 	return records, nil
 }

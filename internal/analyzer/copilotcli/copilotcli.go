@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/jimyag/ai-token-exporter/internal/analyzer"
 	"github.com/jimyag/ai-token-exporter/internal/hash"
@@ -93,7 +92,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		}
 		var item event
 		if err := json.Unmarshal([]byte(line), &item); err != nil {
-			return nil, err
+			continue
 		}
 		events = append(events, item)
 	}
@@ -223,7 +222,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			flush()
 			applyShutdown(records, extractShutdownMetrics(data))
 		}
-		_ = analyzer.ParseTime(item.Timestamp)
 	}
 	flush()
 	return records, nil
@@ -275,7 +273,7 @@ func applyShutdown(records []model.Record, metrics map[string]usageTotals) {
 			records[idx].Tokens.Output = splitEvenly(usage.Output, len(indexes), pos)
 			records[idx].Tokens.CacheRead = splitEvenly(usage.CacheRead, len(indexes), pos)
 			records[idx].Tokens.CacheCreation = splitEvenly(usage.CacheWrite, len(indexes), pos)
-			records[idx].Tokens.Cached = records[idx].Tokens.CacheRead + records[idx].Tokens.CacheCreation
+			records[idx].Tokens.Cached = records[idx].Tokens.CacheRead
 			records[idx].Tokens.Reasoning = min(records[idx].Tokens.Reasoning, records[idx].Tokens.Output)
 		}
 	}
@@ -313,5 +311,3 @@ func contains(values []string, target string) bool {
 	}
 	return false
 }
-
-var _ = time.Now

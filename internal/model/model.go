@@ -22,12 +22,14 @@ type Source struct {
 }
 
 type TokenStats struct {
+	// Input is gross input tokens, including tokens served from cache when the source reports them.
 	Input         uint64
 	Output        uint64
 	Reasoning     uint64
 	CacheCreation uint64
 	CacheRead     uint64
-	Cached        uint64
+	// Cached is cache hit/reused input tokens. It intentionally does not include cache creation tokens.
+	Cached uint64
 }
 
 type Record struct {

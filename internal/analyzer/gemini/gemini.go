@@ -112,21 +112,11 @@ func (a *Analyzer) parseJSONL(ctx context.Context, path string) ([]model.Record,
 		if line == "" {
 			continue
 		}
-		var raw map[string]any
-		if err := json.Unmarshal([]byte(line), &raw); err != nil {
-			return nil, err
-		}
-		if _, ok := raw["$set"]; ok {
-			continue
-		}
-		if raw["type"] == nil || raw["id"] == nil {
-			continue
-		}
 		var msg messageEntry
 		if err := json.Unmarshal([]byte(line), &msg); err != nil {
-			return nil, err
+			continue
 		}
-		if msg.ID == "" {
+		if msg.Type == "$set" || msg.Type == "" || msg.ID == "" {
 			continue
 		}
 		if _, seen := latest[msg.ID]; !seen {

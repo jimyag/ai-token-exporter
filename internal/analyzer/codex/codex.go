@@ -91,7 +91,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		}
 		var item wrapper
 		if err := json.Unmarshal([]byte(line), &item); err != nil {
-			return nil, err
+			continue
 		}
 		var payload any
 		_ = json.Unmarshal(item.Payload, &payload)
@@ -131,7 +131,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			infoBytes, _ := json.Marshal(infoRaw)
 			var info tokenInfo
 			if err := json.Unmarshal(infoBytes, &info); err != nil {
-				return nil, err
+				continue
 			}
 			usage := info.LastTokenUsage
 			if usage == nil && info.TotalTokenUsage != nil {
@@ -151,7 +151,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 				SessionID: sessionID,
 				Role:      model.RoleAssistant,
 				Tokens: model.TokenStats{
-					Input:     usage.InputTokens - min(usage.InputTokens, usage.CachedInputTokens),
+					Input:     usage.InputTokens,
 					Output:    usage.OutputTokens,
 					Reasoning: usage.ReasoningOutputTokens,
 					Cached:    usage.CachedInputTokens,

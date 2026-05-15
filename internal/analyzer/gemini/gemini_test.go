@@ -57,6 +57,8 @@ func TestParseJSONLUsesLatestMessageByID(t *testing.T) {
 	}
 	path := filepath.Join(chatDir, "session.jsonl")
 	content := `{"id":"g1","type":"gemini","timestamp":"2026-05-16T00:00:01Z","model":"gemini-2.5-flash","tokens":{"input":1,"output":1}}
+{"$set":{"messages":[]}}
+{"id":"bad","type":"gemini","tokens":
 {"id":"g1","type":"gemini","timestamp":"2026-05-16T00:00:02Z","model":"gemini-2.5-flash","tokens":{"input":7,"output":3,"cached":2,"thoughts":1}}
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {

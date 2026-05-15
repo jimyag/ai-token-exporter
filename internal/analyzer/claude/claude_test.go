@@ -17,6 +17,7 @@ func TestParseUsageCacheAndDedup(t *testing.T) {
 	}
 	path := filepath.Join(projectDir, "session.jsonl")
 	content := `{"type":"user","uuid":"u1","timestamp":"2026-05-16T00:00:00Z","message":{"role":"user","content":"hello"}}
+{"type":"assistant","uuid":"bad","message":
 {"type":"assistant","uuid":"a1","requestId":"req1","timestamp":"2026-05-16T00:00:01Z","message":{"id":"msg1","role":"assistant","model":"claude-sonnet-4","content":[{"type":"tool_use","name":"Read","input":{}}],"usage":{"input_tokens":10,"output_tokens":5,"cache_creation_input_tokens":3,"cache_read_input_tokens":2}}}
 {"type":"assistant","uuid":"a2","requestId":"req1","timestamp":"2026-05-16T00:00:02Z","message":{"id":"msg1","role":"assistant","model":"claude-sonnet-4","content":[],"usage":{"input_tokens":10,"output_tokens":5,"cache_creation_input_tokens":3,"cache_read_input_tokens":2}}}
 `
@@ -35,7 +36,7 @@ func TestParseUsageCacheAndDedup(t *testing.T) {
 	if assistant.Tokens.Input != 10 || assistant.Tokens.Output != 5 {
 		t.Fatalf("unexpected token stats: %+v", assistant.Tokens)
 	}
-	if assistant.Tokens.CacheCreation != 3 || assistant.Tokens.CacheRead != 2 || assistant.Tokens.Cached != 5 {
+	if assistant.Tokens.CacheCreation != 3 || assistant.Tokens.CacheRead != 2 || assistant.Tokens.Cached != 2 {
 		t.Fatalf("unexpected cache stats: %+v", assistant.Tokens)
 	}
 	if assistant.ToolCalls != 1 {

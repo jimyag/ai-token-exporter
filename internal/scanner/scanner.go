@@ -74,6 +74,7 @@ func (s *Scanner) ScanOnce(ctx context.Context) model.Snapshot {
 		for _, source := range sources {
 			records, err := az.Parse(ctx, source)
 			if err != nil {
+				success = false
 				toolStat.ParseErrors++
 				continue
 			}

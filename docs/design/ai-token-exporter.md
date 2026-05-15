@@ -39,6 +39,8 @@ Label values:
 - `role`: `user`, `assistant`
 - `model`: normalized model name, falling back through tool defaults before `unknown`
 
+`input` is gross input, including cached input when the source reports it. `cached` is cache hit/reused input and does not include cache creation.
+
 Session and project identifiers are intentionally not exposed as metric labels. The exporter aggregates those locally into `tool` and `model` series to keep Prometheus cardinality low and avoid leaking local activity shape.
 
 Metric semantics:
@@ -52,7 +54,7 @@ Metric semantics:
 - `ai_token_exporter_last_scan_timestamp_seconds`: Unix timestamp when the latest scan finished.
 - `ai_token_exporter_last_successful_scan_timestamp_seconds`: Unix timestamp when the latest successful scan finished.
 - `ai_token_exporter_scan_duration_seconds`: duration of the latest scan.
-- `ai_token_exporter_last_scan_success`: `1` when the latest scan completed without fatal scanner errors, otherwise `0`.
+- `ai_token_exporter_last_scan_success`: `1` when the latest scan completed without discovery or source parse errors, otherwise `0`.
 - `ai_token_exporter_build_info`: fixed value `1`, with version and commit labels.
 
 ## Model Resolution
@@ -85,7 +87,7 @@ Default source locations:
 - Codex CLI: `~/.codex/sessions/**/*.jsonl`
 - Gemini CLI: `~/.gemini/tmp/**/chats/*.{json,jsonl}`
 - Copilot CLI: `~/.copilot/session-state/**/*.jsonl`, `~/.copilot/history-session-state/**/*.jsonl`
-- GitHub Copilot Chat: `~/Library/Application Support/{Code,Code - Insiders,Cursor,Windsurf,VSCodium,Positron,Antigravity}/User/workspaceStorage/*/chatSessions/*.json`
+- GitHub Copilot Chat: `{user config dir}/{Code,Code - Insiders,Cursor,Windsurf,VSCodium,Positron,Antigravity}/User/workspaceStorage/*/chatSessions/*.json`
 
 Config overrides:
 
@@ -175,7 +177,7 @@ The scanner should aggregate exported metrics by `tool` and `model`. It may reta
 Claude Code:
 
 - Read `message.usage.input_tokens`, `output_tokens`, `cache_creation_input_tokens`, and `cache_read_input_tokens`.
-- Set `cached = cache_creation + cache_read`.
+- Set `cached = cache_read_input_tokens`.
 - Model comes from `message.model`.
 - Project ID comes from the project directory under `~/.claude/projects`.
 - Session ID comes from the conversation file path hash.
@@ -186,7 +188,7 @@ Codex CLI:
 - Parse wrapper JSONL entries: `session_meta`, `turn_context`, `response_item`, and `event_msg`.
 - Token usage comes from `event_msg` entries where event type is `token_count`.
 - Prefer `last_token_usage`; otherwise calculate delta from `total_token_usage`.
-- Set `input = input_tokens - cached_input_tokens`.
+- Set `input = input_tokens` so `input` remains gross input across tools.
 - Set `cached = cached_input_tokens`.
 - Set `reasoning = reasoning_output_tokens`.
 - Extract model from token event, turn context, or metadata before falling back to config/defaults.

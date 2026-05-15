@@ -95,7 +95,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		}
 		var item entry
 		if err := json.Unmarshal([]byte(line), &item); err != nil {
-			return nil, err
+			continue
 		}
 		if item.Message == nil || item.Message.Model == "<synthetic>" {
 			continue
@@ -124,7 +124,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			tokens.Output = item.Message.Usage.OutputTokens
 			tokens.CacheCreation = item.Message.Usage.CacheCreationInputTokens
 			tokens.CacheRead = item.Message.Usage.CacheReadInputTokens
-			tokens.Cached = tokens.CacheCreation + tokens.CacheRead
+			tokens.Cached = tokens.CacheRead
 		}
 
 		records = append(records, model.Record{

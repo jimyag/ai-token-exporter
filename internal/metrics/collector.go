@@ -31,7 +31,7 @@ func NewCollector(provider SnapshotProvider) *Collector {
 	seriesLabels := []string{"tool", "model"}
 	return &Collector{
 		provider:         provider,
-		tokensDesc:       prometheus.NewDesc("ai_token_exporter_tokens", "Token usage in the current parsed snapshot.", append(seriesLabels, "token_type"), nil),
+		tokensDesc:       prometheus.NewDesc("ai_token_exporter_tokens", "Token usage in the current parsed snapshot. input is gross input including cached input when reported; cached is cache hit/reused input and excludes cache creation.", append(seriesLabels, "token_type"), nil),
 		messagesDesc:     prometheus.NewDesc("ai_token_exporter_messages", "Messages in the current parsed snapshot.", append(seriesLabels, "role"), nil),
 		toolCallsDesc:    prometheus.NewDesc("ai_token_exporter_tool_calls", "Tool calls in the current parsed snapshot.", seriesLabels, nil),
 		sessionsDesc:     prometheus.NewDesc("ai_token_exporter_sessions", "Distinct sessions discovered in the latest scan.", []string{"tool"}, nil),
@@ -40,7 +40,7 @@ func NewCollector(provider SnapshotProvider) *Collector {
 		lastScanDesc:     prometheus.NewDesc("ai_token_exporter_last_scan_timestamp_seconds", "Unix timestamp when the latest scan finished.", nil, nil),
 		lastSuccessDesc:  prometheus.NewDesc("ai_token_exporter_last_successful_scan_timestamp_seconds", "Unix timestamp when the latest successful scan finished.", nil, nil),
 		scanDurationDesc: prometheus.NewDesc("ai_token_exporter_scan_duration_seconds", "Duration of the latest scan in seconds.", nil, nil),
-		lastScanSuccess:  prometheus.NewDesc("ai_token_exporter_last_scan_success", "Whether the latest scan completed without fatal scanner errors.", nil, nil),
+		lastScanSuccess:  prometheus.NewDesc("ai_token_exporter_last_scan_success", "Whether the latest scan completed without discovery or source parse errors.", nil, nil),
 		buildInfoDesc:    prometheus.NewDesc("ai_token_exporter_build_info", "Build information for ai-token-exporter.", []string{"version", "commit"}, nil),
 	}
 }

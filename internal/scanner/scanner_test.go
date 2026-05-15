@@ -63,6 +63,9 @@ func TestScanAggregatesRecordsAndParseErrors(t *testing.T) {
 	if stat.SourceFiles != 2 || stat.ParseErrors != 1 || stat.Sessions != 1 {
 		t.Fatalf("unexpected tool stat: %+v", stat)
 	}
+	if snapshot.LastScanSuccess {
+		t.Fatal("scan success should be false when any source parse fails")
+	}
 	key := model.SeriesKey{Tool: model.ToolCodexCLI, Model: "gpt-5"}
 	if snapshot.Aggregates[key].Tokens.Input != 10 || snapshot.Aggregates[key].ToolCalls != 2 {
 		t.Fatalf("assistant aggregate missing: %+v", snapshot.Aggregates[key])
