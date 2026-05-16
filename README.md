@@ -123,11 +123,13 @@ scrape_configs:
   - job_name: ai-token-exporter
     static_configs:
       - targets: ["localhost:9108"]
+        labels:
+          hostname: "local-dev"
 ```
 
 ## Grafana
 
-Import `dashboard/ai-token-exporter.json` into Grafana. The dashboard includes datasource, tool, model, token type, and role filters.
+Import `dashboard/ai-token-exporter.json` into Grafana. The dashboard includes datasource, instance, hostname, tool, model, token type, and role filters.
 
 ## Release
 

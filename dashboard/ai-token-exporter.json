@@ -94,7 +94,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max(ai_token_exporter_last_scan_success)",
+          "expr": "max(ai_token_exporter_last_scan_success{instance=~\"$instance\",hostname=~\"$hostname\"})",
           "instant": false,
           "legendFormat": "scan success",
           "refId": "A"
@@ -161,7 +161,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "time() - max(ai_token_exporter_last_scan_timestamp_seconds)",
+          "expr": "time() - max(ai_token_exporter_last_scan_timestamp_seconds{instance=~\"$instance\",hostname=~\"$hostname\"})",
           "instant": false,
           "legendFormat": "last scan age",
           "refId": "A"
@@ -228,7 +228,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "time() - max(ai_token_exporter_last_successful_scan_timestamp_seconds)",
+          "expr": "time() - max(ai_token_exporter_last_successful_scan_timestamp_seconds{instance=~\"$instance\",hostname=~\"$hostname\"})",
           "instant": false,
           "legendFormat": "last successful scan age",
           "refId": "A"
@@ -295,7 +295,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max(ai_token_exporter_scan_duration_seconds)",
+          "expr": "max(ai_token_exporter_scan_duration_seconds{instance=~\"$instance\",hostname=~\"$hostname\"})",
           "instant": false,
           "legendFormat": "scan duration",
           "refId": "A"
@@ -351,7 +351,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (tool, model, token_type) (ai_token_exporter_tokens{tool=~\"$tool\",model=~\"$model\",token_type=~\"$token_type\"})",
+          "expr": "sum by (tool, model, token_type) (ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\",token_type=~\"$token_type\"})",
           "instant": false,
           "legendFormat": "{{tool}} / {{model}} / {{token_type}}",
           "refId": "A"
@@ -382,9 +382,177 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 12
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (tool, model, token_type) (clamp_min(increase(ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\",token_type=~\"$token_type\"}[1m]), 0))",
+          "instant": false,
+          "legendFormat": "{{tool}} / {{model}} / {{token_type}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Tokens per Minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 15,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (tool, model) (clamp_min(increase(ai_token_exporter_tool_calls{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\"}[1m]), 0))",
+          "instant": false,
+          "legendFormat": "{{tool}} / {{model}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Tool Calls per Minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 16,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (tool) (clamp_min(increase(ai_token_exporter_sessions{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\"}[1m]), 0))",
+          "instant": false,
+          "legendFormat": "{{tool}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Sessions per Minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
       },
       "id": 6,
       "options": {
@@ -412,7 +580,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (tool, model) (ai_token_exporter_tokens{tool=~\"$tool\",model=~\"$model\",token_type=~\"$token_type\"})",
+          "expr": "sum by (tool, model) (ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\",token_type=~\"$token_type\"})",
           "instant": false,
           "legendFormat": "{{tool}} / {{model}}",
           "refId": "A"
@@ -445,7 +613,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 12
+        "y": 28
       },
       "id": 7,
       "options": {
@@ -454,7 +622,7 @@
             "lastNotNull"
           ],
           "displayMode": "list",
-          "placement": "bottom",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -468,7 +636,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (tool, model, role) (ai_token_exporter_messages{tool=~\"$tool\",model=~\"$model\",role=~\"$role\"})",
+          "expr": "sum by (tool, model, role) (ai_token_exporter_messages{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\",role=~\"$role\"})",
           "instant": false,
           "legendFormat": "{{tool}} / {{model}} / {{role}}",
           "refId": "A"
@@ -501,7 +669,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 20
+        "y": 36
       },
       "id": 8,
       "options": {
@@ -510,7 +678,7 @@
             "lastNotNull"
           ],
           "displayMode": "list",
-          "placement": "bottom",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -524,7 +692,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (tool, model) (ai_token_exporter_tool_calls{tool=~\"$tool\",model=~\"$model\"})",
+          "expr": "sum by (tool, model) (ai_token_exporter_tool_calls{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\"})",
           "instant": false,
           "legendFormat": "{{tool}} / {{model}}",
           "refId": "A"
@@ -557,7 +725,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 20
+        "y": 36
       },
       "id": 9,
       "options": {
@@ -566,7 +734,7 @@
             "lastNotNull"
           ],
           "displayMode": "list",
-          "placement": "bottom",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -580,7 +748,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "ai_token_exporter_sessions{tool=~\"$tool\"}",
+          "expr": "ai_token_exporter_sessions{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\"}",
           "instant": false,
           "legendFormat": "{{tool}}",
           "refId": "A"
@@ -613,7 +781,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 20
+        "y": 36
       },
       "id": 10,
       "options": {
@@ -622,7 +790,7 @@
             "lastNotNull"
           ],
           "displayMode": "list",
-          "placement": "bottom",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -636,7 +804,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "ai_token_exporter_source_files{tool=~\"$tool\"}",
+          "expr": "ai_token_exporter_source_files{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\"}",
           "instant": false,
           "legendFormat": "{{tool}}",
           "refId": "A"
@@ -673,7 +841,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 28
+        "y": 44
       },
       "id": 11,
       "options": {
@@ -682,7 +850,7 @@
             "lastNotNull"
           ],
           "displayMode": "list",
-          "placement": "bottom",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -696,7 +864,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "ai_token_exporter_source_parse_errors{tool=~\"$tool\"}",
+          "expr": "ai_token_exporter_source_parse_errors{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\"}",
           "instant": false,
           "legendFormat": "{{tool}}",
           "refId": "A"
@@ -729,7 +897,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 28
+        "y": 44
       },
       "id": 12,
       "options": {
@@ -757,7 +925,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max(ai_token_exporter_last_scan_timestamp_seconds) * 1000",
+          "expr": "max(ai_token_exporter_last_scan_timestamp_seconds{instance=~\"$instance\",hostname=~\"$hostname\"}) * 1000",
           "instant": false,
           "legendFormat": "last scan",
           "refId": "A"
@@ -767,7 +935,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max(ai_token_exporter_last_successful_scan_timestamp_seconds) * 1000",
+          "expr": "max(ai_token_exporter_last_successful_scan_timestamp_seconds{instance=~\"$instance\",hostname=~\"$hostname\"}) * 1000",
           "instant": false,
           "legendFormat": "last successful scan",
           "refId": "B"
@@ -806,7 +974,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 28
+        "y": 44
       },
       "id": 13,
       "options": {
@@ -828,7 +996,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "ai_token_exporter_build_info",
+          "expr": "ai_token_exporter_build_info{instance=~\"$instance\",hostname=~\"$hostname\"}",
           "format": "table",
           "instant": true,
           "legendFormat": "build info",
@@ -873,14 +1041,64 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(ai_token_exporter_tokens, tool)",
+        "definition": "label_values(ai_token_exporter_build_info, instance)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Instance",
+        "multi": true,
+        "name": "instance",
+        "options": [],
+        "query": "label_values(ai_token_exporter_build_info, instance)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(ai_token_exporter_build_info{instance=~\"$instance\"}, hostname)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Hostname",
+        "multi": true,
+        "name": "hostname",
+        "options": [],
+        "query": "label_values(ai_token_exporter_build_info{instance=~\"$instance\"}, hostname)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\"}, tool)",
         "hide": 0,
         "includeAll": true,
         "label": "Tool",
         "multi": true,
         "name": "tool",
         "options": [],
-        "query": "label_values(ai_token_exporter_tokens, tool)",
+        "query": "label_values(ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\"}, tool)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
@@ -898,14 +1116,14 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(ai_token_exporter_tokens{tool=~\"$tool\"}, model)",
+        "definition": "label_values(ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\"}, model)",
         "hide": 0,
         "includeAll": true,
         "label": "Model",
         "multi": true,
         "name": "model",
         "options": [],
-        "query": "label_values(ai_token_exporter_tokens{tool=~\"$tool\"}, model)",
+        "query": "label_values(ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\"}, model)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
@@ -923,14 +1141,14 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(ai_token_exporter_tokens{tool=~\"$tool\",model=~\"$model\"}, token_type)",
+        "definition": "label_values(ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\"}, token_type)",
         "hide": 0,
         "includeAll": true,
         "label": "Token type",
         "multi": true,
         "name": "token_type",
         "options": [],
-        "query": "label_values(ai_token_exporter_tokens{tool=~\"$tool\",model=~\"$model\"}, token_type)",
+        "query": "label_values(ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\"}, token_type)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
@@ -948,14 +1166,14 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(ai_token_exporter_messages{tool=~\"$tool\",model=~\"$model\"}, role)",
+        "definition": "label_values(ai_token_exporter_messages{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\"}, role)",
         "hide": 0,
         "includeAll": true,
         "label": "Role",
         "multi": true,
         "name": "role",
         "options": [],
-        "query": "label_values(ai_token_exporter_messages{tool=~\"$tool\",model=~\"$model\"}, role)",
+        "query": "label_values(ai_token_exporter_messages{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\"}, role)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
@@ -972,6 +1190,6 @@
   "timezone": "browser",
   "title": "AI Token Exporter",
   "uid": "ai-token-exporter",
-  "version": 1,
+  "version": 5,
   "weekStart": ""
 }

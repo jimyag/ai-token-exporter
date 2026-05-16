@@ -64,6 +64,9 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	for key, agg := range snapshot.Aggregates {
 		base := c.seriesLabelValues(key)
 		for tokenType, value := range tokenValues(agg.Tokens) {
+			if value == 0 {
+				continue
+			}
 			ch <- prometheus.MustNewConstMetric(c.tokensDesc, prometheus.GaugeValue, float64(value), append(base, tokenType)...)
 		}
 		for _, role := range []string{model.RoleUser, model.RoleAssistant} {
@@ -76,9 +79,15 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		}
 	}
 	for tool, stat := range snapshot.Tools {
-		ch <- prometheus.MustNewConstMetric(c.sessionsDesc, prometheus.GaugeValue, float64(stat.Sessions), tool)
-		ch <- prometheus.MustNewConstMetric(c.sourceFilesDesc, prometheus.GaugeValue, float64(stat.SourceFiles), tool)
-		ch <- prometheus.MustNewConstMetric(c.parseErrorsDesc, prometheus.GaugeValue, float64(stat.ParseErrors), tool)
+		if stat.Sessions > 0 {
+			ch <- prometheus.MustNewConstMetric(c.sessionsDesc, prometheus.GaugeValue, float64(stat.Sessions), tool)
+		}
+		if stat.SourceFiles > 0 {
+			ch <- prometheus.MustNewConstMetric(c.sourceFilesDesc, prometheus.GaugeValue, float64(stat.SourceFiles), tool)
+		}
+		if stat.ParseErrors > 0 {
+			ch <- prometheus.MustNewConstMetric(c.parseErrorsDesc, prometheus.GaugeValue, float64(stat.ParseErrors), tool)
+		}
 	}
 	if !snapshot.LastScan.IsZero() {
 		ch <- prometheus.MustNewConstMetric(c.lastScanDesc, prometheus.GaugeValue, float64(snapshot.LastScan.Unix()))

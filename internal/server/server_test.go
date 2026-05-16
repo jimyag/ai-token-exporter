@@ -22,7 +22,7 @@ func TestMetricsEndpointUsesPrometheusTextFormat(t *testing.T) {
 	provider := staticProvider{snapshot: model.Snapshot{
 		Aggregates: map[model.SeriesKey]model.Aggregate{
 			{Tool: model.ToolCodexCLI, Model: "gpt-5"}: {
-				Tokens:   model.TokenStats{Input: 10, Output: 5},
+				Tokens:   model.TokenStats{Input: 10, Output: 5, Cached: 0},
 				Messages: map[string]uint64{model.RoleAssistant: 3},
 			},
 		},
@@ -50,5 +50,8 @@ func TestMetricsEndpointUsesPrometheusTextFormat(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Fatalf("metrics output missing %q:\n%s", want, body)
 		}
+	}
+	if strings.Contains(body, `token_type="cached"`) {
+		t.Fatalf("metrics output should omit zero token series:\n%s", body)
 	}
 }
