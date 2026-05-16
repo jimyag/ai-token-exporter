@@ -117,11 +117,29 @@ jobs:
         with:
           version: latest
           args: check
-      - name: Build release binaries
+      - name: Build release archives
         uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
-          args: build --snapshot --clean
+          args: release --snapshot --clean --skip=docker
+      - name: Verify release archive contents
+        run: |
+          for archive in dist/*.tar.gz; do
+            echo "checking $archive"
+            if tar -tzf "$archive" | grep -E '(^|/)(README|LICENSE)|dashboard/'; then
+              echo "$archive contains non-binary release files"
+              exit 1
+            fi
+            test "$(tar -tzf "$archive" | wc -l | tr -d ' ')" = "1"
+          done
+          for archive in dist/*.zip; do
+            echo "checking $archive"
+            if unzip -Z1 "$archive" | grep -E '(^|/)(README|LICENSE)|dashboard/'; then
+              echo "$archive contains non-binary release files"
+              exit 1
+            fi
+            test "$(unzip -Z1 "$archive" | wc -l | tr -d ' ')" = "1"
+          done
 
   test:
     runs-on: ubuntu-latest

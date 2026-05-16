@@ -270,7 +270,8 @@ git push origin v0.1.0
 The release workflow uses GoReleaser to publish:
 
 - Linux, macOS, and Windows binaries for `amd64` and `arm64`
-- GitHub release archives
+- GitHub release archives containing only the `ai-token-exporter` binary
+- Standalone Grafana dashboard asset: `ai-token-exporter-dashboard.json`
 - Multi-arch container image: `ghcr.io/jimyag/ai-token-exporter:<tag>` and `latest`
 
 Local release dry-run:
