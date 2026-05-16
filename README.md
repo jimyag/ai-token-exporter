@@ -145,7 +145,7 @@ ai-token-exporter backfill \
   --hostname=workstation-1
 ```
 
-Import into VictoriaMetrics:
+Import into VictoriaMetrics. By default, this replaces existing `ai-token-exporter` data for the same `job`, `instance`, and `hostname` before importing:
 
 ```bash
 ai-token-exporter backfill \
@@ -155,18 +155,18 @@ ai-token-exporter backfill \
   --hostname=workstation-1
 ```
 
-Replace existing `ai-token-exporter` data for the same `job`, `instance`, and `hostname` before importing:
+Append without deleting existing series:
 
 ```bash
 ai-token-exporter backfill \
-  --replace-existing \
+  --replace-existing=false \
   --vm-url=http://victoriametrics:8428/api/v1/import/prometheus \
   --job=ai-token-exporter \
   --instance=100.111.111.1:21112 \
   --hostname=workstation-1
 ```
 
-`--replace-existing` deletes only series matching `{__name__=~"ai_token_exporter_.*",job=...,instance=...,hostname=...}` after the import file is generated successfully and before it is posted to VictoriaMetrics. For VictoriaMetrics cluster deployments, pass `--delete-url` if the delete endpoint is not reachable at the URL inferred from `--vm-url`.
+The default replacement path deletes only series matching `{__name__=~"ai_token_exporter_.*",job=...,instance=...,hostname=...}` after the import file is generated successfully and before it is posted to VictoriaMetrics. For VictoriaMetrics cluster deployments, pass `--delete-url` if the delete endpoint is not reachable at the URL inferred from `--vm-url`.
 
 Set `--instance` and `--hostname` to the same labels used by your scrape config so Grafana filters match live and backfilled data. The backfill imports usage series, message counts, tool calls, sessions, and build info; scan health/source-file metrics remain live-only.
 

@@ -193,7 +193,7 @@ ai-token-exporter backfill \
 
 Backfilled samples include `job`, `instance`, and `hostname` labels because these labels are normally attached by scrape configuration, not by the exporter itself. Users should pass the same labels as their live scrape target so Grafana filters match both live and historical data.
 
-For replacement imports, `--replace-existing` first deletes existing VictoriaMetrics series matching `{__name__=~"ai_token_exporter_.*",job=...,instance=...,hostname=...}`. The exporter generates the full import payload before deletion so parse or generation failures do not remove existing data. Single-node delete URLs are inferred from `--vm-url`; cluster or proxied deployments may pass `--delete-url` explicitly.
+For VM imports, replacement is enabled by default. The exporter first deletes existing VictoriaMetrics series matching `{__name__=~"ai_token_exporter_.*",job=...,instance=...,hostname=...}`. It generates the full import payload before deletion so parse or generation failures do not remove existing data. Single-node delete URLs are inferred from `--vm-url`; cluster or proxied deployments may pass `--delete-url` explicitly. Users can pass `--replace-existing=false` for append-only imports.
 
 Backfill imports usage series, message counts, tool calls, sessions, and build info. Scan health and source-file metrics remain live-only because they describe scan execution state rather than historical token usage.
 

@@ -19,12 +19,13 @@ func runBackfill(args []string, version, commit string) error {
 
 	hostname, _ := os.Hostname()
 	options := backfill.Options{
-		Step:     time.Minute,
-		Job:      "ai-token-exporter",
-		Instance: hostname + ":backfill",
-		Hostname: hostname,
-		Version:  version,
-		Commit:   commit,
+		Step:            time.Minute,
+		Job:             "ai-token-exporter",
+		Instance:        hostname + ":backfill",
+		Hostname:        hostname,
+		Version:         version,
+		Commit:          commit,
+		ReplaceExisting: true,
 	}
 
 	var enabled string
@@ -38,15 +39,12 @@ func runBackfill(args []string, version, commit string) error {
 	fs.StringVar(&options.Instance, "instance", options.Instance, "instance label to write")
 	fs.StringVar(&options.Hostname, "hostname", options.Hostname, "hostname label to write")
 	fs.StringVar(&options.VMURL, "vm-url", "", "VictoriaMetrics /api/v1/import/prometheus URL; writes to stdout when empty")
-	fs.BoolVar(&options.ReplaceExisting, "replace-existing", false, "delete existing ai-token-exporter series for the same job/instance/hostname before import")
+	fs.BoolVar(&options.ReplaceExisting, "replace-existing", options.ReplaceExisting, "delete existing ai-token-exporter series for the same job/instance/hostname before VM import")
 	fs.StringVar(&options.DeleteURL, "delete-url", "", "VictoriaMetrics delete_series URL; inferred from --vm-url for single-node VictoriaMetrics")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	config.ApplyEnabled(&cfg, enabled)
-	if options.ReplaceExisting && options.VMURL == "" {
-		return fmt.Errorf("--replace-existing requires --vm-url")
-	}
 
 	var err error
 	if options.From, err = parseOptionalTime(from); err != nil {
