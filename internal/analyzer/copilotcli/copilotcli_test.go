@@ -46,3 +46,29 @@ func TestShutdownMetricsOverrideEstimatedTokens(t *testing.T) {
 		t.Fatalf("tool calls = %d, want 1", assistant.ToolCalls)
 	}
 }
+
+func TestToolArgumentsDoNotOverrideModel(t *testing.T) {
+	root := t.TempDir()
+	stateDir := filepath.Join(root, "session-state")
+	if err := os.MkdirAll(stateDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(stateDir, "events.jsonl")
+	content := `{"type":"session.start","timestamp":"2026-05-16T00:00:00Z","data":{"sessionId":"s1","context":{"model":"claude-sonnet-4"}}}
+{"type":"user.message","timestamp":"2026-05-16T00:00:01Z","data":{"content":"hello"}}
+{"type":"tool.execution_start","timestamp":"2026-05-16T00:00:02Z","data":{"toolName":"run","arguments":{"model":"accidental-argument-model"}}}
+{"type":"assistant.message","timestamp":"2026-05-16T00:00:03Z","data":{"content":"world"}}
+{"type":"assistant.turn_end","timestamp":"2026-05-16T00:00:04Z","data":{}}
+`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	records, err := New(root).Parse(context.Background(), model.Source{Path: path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := records[1].Model, "claude-sonnet-4"; got != want {
+		t.Fatalf("assistant model = %q, want %q", got, want)
+	}
+}

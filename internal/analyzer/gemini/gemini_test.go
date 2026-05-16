@@ -27,7 +27,7 @@ func TestParseJSONSessionTokens(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records, err := New(root).Parse(context.Background(), model.Source{Path: path})
+	records, err := New(root, root).Parse(context.Background(), model.Source{Path: path})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,6 +58,7 @@ func TestParseJSONLUsesLatestMessageByID(t *testing.T) {
 	path := filepath.Join(chatDir, "session.jsonl")
 	content := `{"id":"g1","type":"gemini","timestamp":"2026-05-16T00:00:01Z","model":"gemini-2.5-flash","tokens":{"input":1,"output":1}}
 {"$set":{"messages":[]}}
+{"id":"g2","type":"gemini","$set":{"tokens":{"input":99}},"model":"gemini-2.5-flash","tokens":{"input":99}}
 {"id":"bad","type":"gemini","tokens":
 {"id":"g1","type":"gemini","timestamp":"2026-05-16T00:00:02Z","model":"gemini-2.5-flash","tokens":{"input":7,"output":3,"cached":2,"thoughts":1}}
 `
@@ -65,7 +66,7 @@ func TestParseJSONLUsesLatestMessageByID(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records, err := New(root).Parse(context.Background(), model.Source{Path: path})
+	records, err := New(root, root).Parse(context.Background(), model.Source{Path: path})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,5 +75,18 @@ func TestParseJSONLUsesLatestMessageByID(t *testing.T) {
 	}
 	if records[0].Tokens.Input != 7 || records[0].Tokens.Output != 3 || records[0].Tokens.Cached != 2 || records[0].Tokens.Reasoning != 1 {
 		t.Fatalf("latest message was not used: %+v", records[0].Tokens)
+	}
+}
+
+func TestDefaultModelUsesConfigDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	configDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(configDir, "settings.json"), []byte(`{"model":"gemini-2.5-flash"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	az := New(tmpDir, configDir)
+	if az.DefaultModel != "gemini-2.5-flash" {
+		t.Fatalf("default model = %q", az.DefaultModel)
 	}
 }

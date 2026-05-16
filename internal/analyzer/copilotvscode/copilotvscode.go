@@ -19,11 +19,14 @@ type Analyzer struct {
 	DefaultModel string
 }
 
-func New() *Analyzer {
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		home, _ := os.UserHomeDir()
-		configDir = filepath.Join(home, "Library", "Application Support")
+func New(configDir string) *Analyzer {
+	if configDir == "" {
+		var err error
+		configDir, err = os.UserConfigDir()
+		if err != nil {
+			home, _ := os.UserHomeDir()
+			configDir = filepath.Join(home, "Library", "Application Support")
+		}
 	}
 	roots := make([]string, 0, len(forks))
 	for _, fork := range forks {
@@ -113,12 +116,14 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		inputTokens := analyzer.CountTokens(req.Message.Text)
 		var outputTokens uint64
 		var toolCalls uint64
+		hasMetadataToolCalls := false
 
 		if req.Result != nil && req.Result.Metadata != nil {
 			inputTokens += analyzer.CountTokens(analyzer.ExtractText(req.Result.Metadata.ToolCallResults))
 			for _, round := range req.Result.Metadata.ToolCallRounds {
 				outputTokens += analyzer.CountTokens(round.Response)
 				for _, call := range round.ToolCalls {
+					hasMetadataToolCalls = true
 					toolCalls++
 					outputTokens += analyzer.CountTokens(call.Name)
 					outputTokens += analyzer.CountTokens(call.Arguments)
@@ -133,7 +138,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			if value, ok := part["value"].(string); ok {
 				outputTokens += analyzer.CountTokens(value)
 			}
-			if part["kind"] == "toolInvocationSerialized" {
+			if part["kind"] == "toolInvocationSerialized" && !hasMetadataToolCalls {
 				toolCalls++
 			}
 		}

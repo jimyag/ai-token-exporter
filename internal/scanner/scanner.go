@@ -48,11 +48,10 @@ func (s *Scanner) Run(ctx context.Context, interval time.Duration) {
 
 func (s *Scanner) ScanOnce(ctx context.Context) model.Snapshot {
 	start := time.Now()
-	previous := s.Snapshot()
 	next := model.Snapshot{
 		Aggregates:         make(map[model.SeriesKey]model.Aggregate),
 		Tools:              make(map[string]model.ToolSnapshot),
-		LastSuccessfulScan: previous.LastSuccessfulScan,
+		LastSuccessfulScan: s.lastSuccessfulScan(),
 		Version:            s.version,
 		Commit:             s.commit,
 	}
@@ -125,6 +124,12 @@ func (s *Scanner) Snapshot() model.Snapshot {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return cloneSnapshot(s.snapshot)
+}
+
+func (s *Scanner) lastSuccessfulScan() time.Time {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.snapshot.LastSuccessfulScan
 }
 
 func cloneSnapshot(in model.Snapshot) model.Snapshot {

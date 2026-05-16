@@ -10,29 +10,33 @@ import (
 )
 
 type Config struct {
-	Listen       string
-	ScanInterval time.Duration
-	Enabled      map[string]bool
-	ClaudeDir    string
-	CodexDir     string
-	CopilotDir   string
-	GeminiDir    string
-	Version      string
-	Commit       string
+	Listen          string
+	ScanInterval    time.Duration
+	Enabled         map[string]bool
+	ClaudeDir       string
+	CodexDir        string
+	CopilotDir      string
+	GeminiDir       string
+	GeminiConfigDir string
+	VSCodeConfigDir string
+	Version         string
+	Commit          string
 }
 
 func Load(args []string) (Config, error) {
 	home, _ := os.UserHomeDir()
 	cfg := Config{
-		Listen:       envString("AI_TOKEN_EXPORTER_LISTEN", ":9108"),
-		ScanInterval: envDuration("AI_TOKEN_EXPORTER_SCAN_INTERVAL", 30*time.Second),
-		Enabled:      parseEnabled(envString("AI_TOKEN_EXPORTER_ENABLED", "claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli")),
-		ClaudeDir:    envString("AI_TOKEN_EXPORTER_CLAUDE_DIR", filepath.Join(home, ".claude", "projects")),
-		CodexDir:     envString("AI_TOKEN_EXPORTER_CODEX_DIR", filepath.Join(home, ".codex")),
-		CopilotDir:   envString("AI_TOKEN_EXPORTER_COPILOT_DIR", filepath.Join(home, ".copilot")),
-		GeminiDir:    envString("AI_TOKEN_EXPORTER_GEMINI_DIR", filepath.Join(home, ".gemini", "tmp")),
-		Version:      "dev",
-		Commit:       "none",
+		Listen:          envString("AI_TOKEN_EXPORTER_LISTEN", ":9108"),
+		ScanInterval:    envDuration("AI_TOKEN_EXPORTER_SCAN_INTERVAL", 30*time.Second),
+		Enabled:         parseEnabled(envString("AI_TOKEN_EXPORTER_ENABLED", "claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli")),
+		ClaudeDir:       envString("AI_TOKEN_EXPORTER_CLAUDE_DIR", filepath.Join(home, ".claude", "projects")),
+		CodexDir:        envString("AI_TOKEN_EXPORTER_CODEX_DIR", filepath.Join(home, ".codex")),
+		CopilotDir:      envString("AI_TOKEN_EXPORTER_COPILOT_DIR", filepath.Join(home, ".copilot")),
+		GeminiDir:       envString("AI_TOKEN_EXPORTER_GEMINI_DIR", filepath.Join(home, ".gemini", "tmp")),
+		GeminiConfigDir: envString("AI_TOKEN_EXPORTER_GEMINI_CONFIG_DIR", filepath.Join(home, ".gemini")),
+		VSCodeConfigDir: envString("AI_TOKEN_EXPORTER_VSCODE_CONFIG_DIR", ""),
+		Version:         "dev",
+		Commit:          "none",
 	}
 
 	var enabled string
@@ -44,6 +48,8 @@ func Load(args []string) (Config, error) {
 	fs.StringVar(&cfg.CodexDir, "codex-dir", cfg.CodexDir, "Codex home directory")
 	fs.StringVar(&cfg.CopilotDir, "copilot-dir", cfg.CopilotDir, "Copilot home directory")
 	fs.StringVar(&cfg.GeminiDir, "gemini-dir", cfg.GeminiDir, "Gemini CLI tmp directory")
+	fs.StringVar(&cfg.GeminiConfigDir, "gemini-config-dir", cfg.GeminiConfigDir, "Gemini CLI config directory")
+	fs.StringVar(&cfg.VSCodeConfigDir, "vscode-config-dir", cfg.VSCodeConfigDir, "VS Code-compatible editor config directory")
 	if err := fs.Parse(args); err != nil {
 		return Config{}, err
 	}

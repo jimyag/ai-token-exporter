@@ -13,8 +13,6 @@ import (
 	"github.com/jimyag/ai-token-exporter/internal/model"
 )
 
-const fallbackModel = "gpt-5"
-
 type Analyzer struct {
 	CodexDir     string
 	SessionsDir  string
@@ -23,9 +21,6 @@ type Analyzer struct {
 
 func New(codexDir string) *Analyzer {
 	defaultModel := analyzer.ReadDefaultModelFromText(filepath.Join(codexDir, "config.toml"))
-	if defaultModel == "" {
-		defaultModel = fallbackModel
-	}
 	return &Analyzer{
 		CodexDir:     codexDir,
 		SessionsDir:  filepath.Join(codexDir, "sessions"),
@@ -110,7 +105,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			}
 			if obj["type"] == "message" {
 				role, _ := obj["role"].(string)
-				if role == model.RoleUser || role == model.RoleAssistant {
+				if role == model.RoleUser {
 					records = append(records, model.Record{
 						Tool:      a.Name(),
 						Model:     analyzer.ResolveModel(currentModel, a.DefaultModel),
@@ -141,6 +136,9 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			if info.TotalTokenUsage != nil {
 				copyValue := *info.TotalTokenUsage
 				previous = &copyValue
+			} else if usage != nil {
+				accumulated := add(previous, *usage)
+				previous = &accumulated
 			}
 			if usage == nil {
 				continue
@@ -165,6 +163,19 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		return nil, err
 	}
 	return records, nil
+}
+
+func add(previous *tokenUsage, delta tokenUsage) tokenUsage {
+	if previous == nil {
+		return delta
+	}
+	return tokenUsage{
+		InputTokens:           previous.InputTokens + delta.InputTokens,
+		OutputTokens:          previous.OutputTokens + delta.OutputTokens,
+		CachedInputTokens:     previous.CachedInputTokens + delta.CachedInputTokens,
+		ReasoningOutputTokens: previous.ReasoningOutputTokens + delta.ReasoningOutputTokens,
+		TotalTokens:           previous.TotalTokens + delta.TotalTokens,
+	}
 }
 
 func subtract(current tokenUsage, previous *tokenUsage) tokenUsage {

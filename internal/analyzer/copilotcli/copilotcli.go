@@ -153,16 +153,20 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		default:
 		}
 		data, _ := item.Data.(map[string]any)
-		if found := analyzer.ExtractModel(data); found != "" {
-			currentModel = found
-			if current != nil {
-				current.Model = found
-			}
-		}
 		switch item.Type {
+		case "session.start":
+			if found := analyzer.ExtractModel(data); found != "" {
+				currentModel = found
+				if current != nil {
+					current.Model = found
+				}
+			}
 		case "session.model_change":
 			if found := analyzer.ExtractModel(data); found != "" {
 				currentModel = found
+				if current != nil {
+					current.Model = found
+				}
 			}
 		case "user.message":
 			flush()
@@ -181,6 +185,12 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		case "assistant.turn_end":
 			flush()
 		case "assistant.message", "assistant.message.delta":
+			if found := analyzer.ExtractModel(data); found != "" {
+				currentModel = found
+				if current != nil {
+					current.Model = found
+				}
+			}
 			if current == nil {
 				current = &turn{Model: currentModel}
 			}
@@ -194,6 +204,12 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 				current.ExactOutput += uint64(raw)
 			}
 		case "assistant.reasoning":
+			if found := analyzer.ExtractModel(data); found != "" {
+				currentModel = found
+				if current != nil {
+					current.Model = found
+				}
+			}
 			if current == nil {
 				current = &turn{Model: currentModel}
 			}

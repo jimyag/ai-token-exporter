@@ -18,8 +18,8 @@ type Analyzer struct {
 	DefaultModel string
 }
 
-func New(tmpDir string) *Analyzer {
-	defaultModel := analyzer.ReadDefaultModelFromJSON(filepath.Join(filepath.Dir(tmpDir), "settings.json"))
+func New(tmpDir, configDir string) *Analyzer {
+	defaultModel := analyzer.ReadDefaultModelFromJSON(filepath.Join(configDir, "settings.json"))
 	return &Analyzer{TmpDir: tmpDir, DefaultModel: defaultModel}
 }
 
@@ -56,6 +56,7 @@ type sessionFile struct {
 type messageEntry struct {
 	ID        string          `json:"id"`
 	Type      string          `json:"type"`
+	Set       json.RawMessage `json:"$set"`
 	Timestamp string          `json:"timestamp"`
 	Content   json.RawMessage `json:"content"`
 	Model     string          `json:"model"`
@@ -116,7 +117,7 @@ func (a *Analyzer) parseJSONL(ctx context.Context, path string) ([]model.Record,
 		if err := json.Unmarshal([]byte(line), &msg); err != nil {
 			continue
 		}
-		if msg.Type == "$set" || msg.Type == "" || msg.ID == "" {
+		if len(msg.Set) > 0 || msg.Type == "" || msg.ID == "" {
 			continue
 		}
 		if _, seen := latest[msg.ID]; !seen {

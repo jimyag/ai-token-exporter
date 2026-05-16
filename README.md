@@ -74,6 +74,8 @@ Flags can be set with environment variables:
 | `--codex-dir` | `AI_TOKEN_EXPORTER_CODEX_DIR` | `~/.codex` |
 | `--copilot-dir` | `AI_TOKEN_EXPORTER_COPILOT_DIR` | `~/.copilot` |
 | `--gemini-dir` | `AI_TOKEN_EXPORTER_GEMINI_DIR` | `~/.gemini/tmp` |
+| `--gemini-config-dir` | `AI_TOKEN_EXPORTER_GEMINI_CONFIG_DIR` | `~/.gemini` |
+| `--vscode-config-dir` | `AI_TOKEN_EXPORTER_VSCODE_CONFIG_DIR` | `os.UserConfigDir()`; for example `~/Library/Application Support` on macOS, `~/.config` on Linux, `%APPDATA%` on Windows |
 
 Default source locations:
 
@@ -122,6 +124,10 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9108"]
 ```
+
+## Grafana
+
+Import `dashboard/ai-token-exporter.json` into Grafana. The dashboard includes datasource, tool, model, token type, and role filters.
 
 ## Release
 

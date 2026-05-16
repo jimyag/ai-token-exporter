@@ -68,10 +68,10 @@ func buildAnalyzers(cfg config.Config) []analyzer.Analyzer {
 		analyzers = append(analyzers, copilotcli.New(cfg.CopilotDir))
 	}
 	if cfg.Enabled[model.ToolGitHubCopilot] {
-		analyzers = append(analyzers, copilotvscode.New())
+		analyzers = append(analyzers, copilotvscode.New(cfg.VSCodeConfigDir))
 	}
 	if cfg.Enabled[model.ToolGeminiCLI] {
-		analyzers = append(analyzers, gemini.New(cfg.GeminiDir))
+		analyzers = append(analyzers, gemini.New(cfg.GeminiDir, cfg.GeminiConfigDir))
 	}
 	return analyzers
 }

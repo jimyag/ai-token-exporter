@@ -72,8 +72,8 @@ Resolution order:
 Tool-specific defaults:
 
 - Claude Code: read known Claude settings files when available, then fall back to `unknown`.
-- Codex CLI: read Codex config from the user's Codex home when available; if no configured model is found, use the current Codex CLI fallback default used by the analyzer.
-- Gemini CLI: read model from each Gemini message first, then fall back to `~/.gemini/settings.json`, then `unknown`.
+- Codex CLI: read Codex config from the user's Codex home when available; if no configured model is found, use `unknown`.
+- Gemini CLI: read model from each Gemini message first, then fall back to the configured Gemini config directory, then `unknown`.
 - Copilot CLI: read model from session start/context events first, then any Copilot CLI config if available, then `unknown`.
 - GitHub Copilot Chat: read `modelId` from each request first; if missing, use any session/editor configuration discovered locally, then `unknown`.
 
@@ -99,6 +99,8 @@ AI_TOKEN_EXPORTER_CLAUDE_DIR
 AI_TOKEN_EXPORTER_CODEX_DIR
 AI_TOKEN_EXPORTER_COPILOT_DIR
 AI_TOKEN_EXPORTER_GEMINI_DIR
+AI_TOKEN_EXPORTER_GEMINI_CONFIG_DIR
+AI_TOKEN_EXPORTER_VSCODE_CONFIG_DIR
 ```
 
 Default CLI:
@@ -191,6 +193,7 @@ Codex CLI:
 - Set `input = input_tokens` so `input` remains gross input across tools.
 - Set `cached = cached_input_tokens`.
 - Set `reasoning = reasoning_output_tokens`.
+- Count Codex assistant messages from token count events; assistant message count follows token usage events rather than raw streaming response message fragments.
 - Extract model from token event, turn context, or metadata before falling back to config/defaults.
 
 Gemini CLI:
