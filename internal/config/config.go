@@ -23,9 +23,9 @@ type Config struct {
 	Commit          string
 }
 
-func Load(args []string) (Config, error) {
+func Default() Config {
 	home, _ := os.UserHomeDir()
-	cfg := Config{
+	return Config{
 		Listen:          envString("AI_TOKEN_EXPORTER_LISTEN", ":9108"),
 		ScanInterval:    envDuration("AI_TOKEN_EXPORTER_SCAN_INTERVAL", 30*time.Second),
 		Enabled:         parseEnabled(envString("AI_TOKEN_EXPORTER_ENABLED", "claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli")),
@@ -38,23 +38,34 @@ func Load(args []string) (Config, error) {
 		Version:         "dev",
 		Commit:          "none",
 	}
+}
 
+func Load(args []string) (Config, error) {
+	cfg := Default()
 	var enabled string
 	fs := flag.NewFlagSet("ai-token-exporter", flag.ContinueOnError)
+	BindFlags(fs, &cfg, &enabled)
+	if err := fs.Parse(args); err != nil {
+		return Config{}, err
+	}
+	ApplyEnabled(&cfg, enabled)
+	return cfg, nil
+}
+
+func BindFlags(fs *flag.FlagSet, cfg *Config, enabled *string) {
 	fs.StringVar(&cfg.Listen, "listen", cfg.Listen, "listen address")
 	fs.DurationVar(&cfg.ScanInterval, "scan-interval", cfg.ScanInterval, "scan interval")
-	fs.StringVar(&enabled, "enabled", joinEnabled(cfg.Enabled), "comma-separated enabled tools")
+	fs.StringVar(enabled, "enabled", joinEnabled(cfg.Enabled), "comma-separated enabled tools")
 	fs.StringVar(&cfg.ClaudeDir, "claude-dir", cfg.ClaudeDir, "Claude Code projects directory")
 	fs.StringVar(&cfg.CodexDir, "codex-dir", cfg.CodexDir, "Codex home directory")
 	fs.StringVar(&cfg.CopilotDir, "copilot-dir", cfg.CopilotDir, "Copilot home directory")
 	fs.StringVar(&cfg.GeminiDir, "gemini-dir", cfg.GeminiDir, "Gemini CLI tmp directory")
 	fs.StringVar(&cfg.GeminiConfigDir, "gemini-config-dir", cfg.GeminiConfigDir, "Gemini CLI config directory")
 	fs.StringVar(&cfg.VSCodeConfigDir, "vscode-config-dir", cfg.VSCodeConfigDir, "VS Code-compatible editor config directory")
-	if err := fs.Parse(args); err != nil {
-		return Config{}, err
-	}
+}
+
+func ApplyEnabled(cfg *Config, enabled string) {
 	cfg.Enabled = parseEnabled(enabled)
-	return cfg, nil
 }
 
 func envString(key, fallback string) string {

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jimyag/ai-token-exporter/internal/analyzer"
 	"github.com/jimyag/ai-token-exporter/internal/hash"
@@ -60,6 +61,7 @@ type event struct {
 
 type turn struct {
 	Model          string
+	Timestamp      time.Time
 	UserText       string
 	InputParts     []string
 	OutputParts    []string
@@ -136,6 +138,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			Model:     analyzer.ResolveModel(current.Model, currentModel, a.DefaultModel),
 			SessionID: sessionID,
 			Role:      model.RoleAssistant,
+			Timestamp: nonZeroTime(current.Timestamp),
 			Tokens: model.TokenStats{
 				Input:     analyzer.CountTokens(current.UserText + "\n" + strings.Join(current.InputParts, "\n")),
 				Output:    outputTokens,
@@ -153,6 +156,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		default:
 		}
 		data, _ := item.Data.(map[string]any)
+		eventTime := analyzer.ParseTime(item.Timestamp)
 		switch item.Type {
 		case "session.start":
 			if found := analyzer.ExtractModel(data); found != "" {
@@ -176,11 +180,14 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 				Model:     analyzer.ResolveModel(currentModel, a.DefaultModel),
 				SessionID: sessionID,
 				Role:      model.RoleUser,
+				Timestamp: eventTime,
 			})
-			current = &turn{Model: currentModel, UserText: text}
+			current = &turn{Model: currentModel, Timestamp: eventTime, UserText: text}
 		case "assistant.turn_start":
 			if current == nil {
-				current = &turn{Model: currentModel}
+				current = &turn{Model: currentModel, Timestamp: eventTime}
+			} else if current.Timestamp.IsZero() {
+				current.Timestamp = eventTime
 			}
 		case "assistant.turn_end":
 			flush()
@@ -192,7 +199,9 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 				}
 			}
 			if current == nil {
-				current = &turn{Model: currentModel}
+				current = &turn{Model: currentModel, Timestamp: eventTime}
+			} else if current.Timestamp.IsZero() {
+				current.Timestamp = eventTime
 			}
 			if text := analyzer.ExtractText(data["content"]); text != "" {
 				current.OutputParts = append(current.OutputParts, text)
@@ -211,14 +220,18 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 				}
 			}
 			if current == nil {
-				current = &turn{Model: currentModel}
+				current = &turn{Model: currentModel, Timestamp: eventTime}
+			} else if current.Timestamp.IsZero() {
+				current.Timestamp = eventTime
 			}
 			if text := analyzer.ExtractText(data["content"]); text != "" {
 				current.ReasoningParts = append(current.ReasoningParts, text)
 			}
 		case "tool.execution_start":
 			if current == nil {
-				current = &turn{Model: currentModel}
+				current = &turn{Model: currentModel, Timestamp: eventTime}
+			} else if current.Timestamp.IsZero() {
+				current.Timestamp = eventTime
 			}
 			current.ToolCalls++
 			toolName, _ := data["toolName"].(string)
@@ -229,7 +242,9 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			current.OutputParts = append(current.OutputParts, toolName+" "+string(args))
 		case "tool.execution_complete":
 			if current == nil {
-				current = &turn{Model: currentModel}
+				current = &turn{Model: currentModel, Timestamp: eventTime}
+			} else if current.Timestamp.IsZero() {
+				current.Timestamp = eventTime
 			}
 			if text := analyzer.ExtractText(data["result"]); text != "" {
 				current.InputParts = append(current.InputParts, text)
@@ -326,4 +341,11 @@ func contains(values []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func nonZeroTime(value time.Time) time.Time {
+	if value.IsZero() {
+		return time.Now().UTC()
+	}
+	return value
 }

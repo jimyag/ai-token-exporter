@@ -153,6 +153,7 @@ func (a *Analyzer) recordsFromMessages(ctx context.Context, sessionID string, me
 				Model:     analyzer.ResolveModel(currentModel, a.DefaultModel),
 				SessionID: sessionID,
 				Role:      model.RoleUser,
+				Timestamp: analyzer.ParseTime(msg.Timestamp),
 			})
 		case "gemini":
 			currentModel = analyzer.ResolveModel(msg.Model, currentModel, a.DefaultModel)
@@ -168,6 +169,7 @@ func (a *Analyzer) recordsFromMessages(ctx context.Context, sessionID string, me
 				Model:     currentModel,
 				SessionID: sessionID,
 				Role:      model.RoleAssistant,
+				Timestamp: analyzer.ParseTime(msg.Timestamp),
 				Tokens:    tokens,
 				ToolCalls: uint64(len(msg.ToolCalls)),
 			})

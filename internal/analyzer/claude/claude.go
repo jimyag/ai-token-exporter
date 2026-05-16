@@ -132,6 +132,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			Model:     analyzer.ResolveModel(item.Message.Model, a.DefaultModel),
 			SessionID: sessionID,
 			Role:      role,
+			Timestamp: analyzer.ParseTime(item.Timestamp),
 			Tokens:    tokens,
 			ToolCalls: countToolUse(item.Message.Content),
 		})

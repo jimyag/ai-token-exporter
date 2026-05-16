@@ -122,6 +122,7 @@ internal/config/
 internal/server/
 internal/metrics/
 internal/scanner/
+internal/backfill/
 internal/analyzer/
 internal/analyzer/claude/
 internal/analyzer/codex/
@@ -162,6 +163,7 @@ type Record struct {
     Model        string
     SessionID    string
     Role         string
+    Timestamp    time.Time
     InputTokens  uint64
     OutputTokens uint64
     Reasoning    uint64
@@ -173,6 +175,25 @@ type Record struct {
 ```
 
 The scanner should aggregate exported metrics by `tool` and `model`. It may retain session hashes internally only to compute `ai_token_exporter_sessions{tool}`.
+
+## VictoriaMetrics Backfill
+
+The exporter also provides a `backfill` subcommand for VictoriaMetrics-only historical imports. It parses the same local logs, sorts records by their source timestamps, and writes cumulative samples in Prometheus text import format:
+
+```bash
+ai-token-exporter backfill \
+  --vm-url=http://victoriametrics:8428/api/v1/import/prometheus \
+  --from=2026-05-01T00:00:00+08:00 \
+  --to=2026-05-16T00:00:00+08:00 \
+  --step=1m \
+  --job=ai-token-exporter \
+  --instance=100.111.111.1:21112 \
+  --hostname=workstation-1
+```
+
+Backfilled samples include `job`, `instance`, and `hostname` labels because these labels are normally attached by scrape configuration, not by the exporter itself. Users should pass the same labels as their live scrape target so Grafana filters match both live and historical data.
+
+Backfill imports usage series, message counts, tool calls, sessions, and build info. Scan health and source-file metrics remain live-only because they describe scan execution state rather than historical token usage.
 
 ## Parser Notes
 

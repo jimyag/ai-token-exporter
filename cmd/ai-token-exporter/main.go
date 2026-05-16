@@ -29,6 +29,13 @@ var (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "backfill" {
+		if err := runBackfill(os.Args[2:], version, commit); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
 	cfg, err := config.Load(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)

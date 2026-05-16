@@ -127,6 +127,36 @@ scrape_configs:
           hostname: "local-dev"
 ```
 
+## VictoriaMetrics Backfill
+
+`backfill` replays parsed log records by timestamp and writes cumulative historical samples in VictoriaMetrics' Prometheus import format. This is useful when a fresh VM/Grafana setup would otherwise start with today's full snapshot and no earlier points.
+
+VictoriaMetrics documents this endpoint as [`POST /api/v1/import/prometheus`](https://docs.victoriametrics.com/victoriametrics/#how-to-import-data-in-prometheus-exposition-format); each imported line may include an explicit timestamp.
+
+Preview the import text:
+
+```bash
+ai-token-exporter backfill \
+  --from=2026-05-01T00:00:00+08:00 \
+  --to=2026-05-16T00:00:00+08:00 \
+  --step=1m \
+  --job=ai-token-exporter \
+  --instance=100.111.111.1:21112 \
+  --hostname=workstation-1
+```
+
+Import into VictoriaMetrics:
+
+```bash
+ai-token-exporter backfill \
+  --vm-url=http://victoriametrics:8428/api/v1/import/prometheus \
+  --job=ai-token-exporter \
+  --instance=100.111.111.1:21112 \
+  --hostname=workstation-1
+```
+
+Set `--instance` and `--hostname` to the same labels used by your scrape config so Grafana filters match live and backfilled data. The backfill imports usage series, message counts, tool calls, sessions, and build info; scan health/source-file metrics remain live-only.
+
 ## Grafana
 
 Import `dashboard/ai-token-exporter.json` into Grafana. The dashboard includes datasource, instance, hostname, tool, model, token type, and role filters.
@@ -169,6 +199,7 @@ task lint
 task test
 task build
 task run -- --listen=:9108
+task backfill -- --vm-url=http://localhost:8428/api/v1/import/prometheus
 task docker-build
 task release-snapshot
 ```

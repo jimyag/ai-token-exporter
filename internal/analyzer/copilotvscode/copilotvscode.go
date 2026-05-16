@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jimyag/ai-token-exporter/internal/analyzer"
 	"github.com/jimyag/ai-token-exporter/internal/hash"
@@ -113,6 +114,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		default:
 		}
 		modelName := analyzer.ResolveModel(analyzer.LastPathSegment(req.ModelID), a.DefaultModel)
+		recordTime := requestTime(req.Timestamp)
 		inputTokens := analyzer.CountTokens(req.Message.Text)
 		var outputTokens uint64
 		var toolCalls uint64
@@ -148,12 +150,14 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			Model:     modelName,
 			SessionID: sessionID,
 			Role:      model.RoleUser,
+			Timestamp: recordTime,
 		})
 		records = append(records, model.Record{
 			Tool:      a.Name(),
 			Model:     modelName,
 			SessionID: sessionID,
 			Role:      model.RoleAssistant,
+			Timestamp: recordTime,
 			Tokens: model.TokenStats{
 				Input:  inputTokens,
 				Output: outputTokens,
@@ -162,4 +166,11 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		})
 	}
 	return records, nil
+}
+
+func requestTime(timestamp int64) time.Time {
+	if timestamp <= 0 {
+		return time.Now().UTC()
+	}
+	return time.UnixMilli(timestamp).UTC()
 }

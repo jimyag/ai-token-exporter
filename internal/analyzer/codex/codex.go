@@ -111,6 +111,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 						Model:     analyzer.ResolveModel(currentModel, a.DefaultModel),
 						SessionID: sessionID,
 						Role:      role,
+						Timestamp: analyzer.ParseTime(item.Timestamp),
 					})
 				}
 			}
@@ -148,6 +149,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 				Model:     analyzer.ResolveModel(currentModel, a.DefaultModel),
 				SessionID: sessionID,
 				Role:      model.RoleAssistant,
+				Timestamp: analyzer.ParseTime(item.Timestamp),
 				Tokens: model.TokenStats{
 					Input:     usage.InputTokens,
 					Output:    usage.OutputTokens,

@@ -69,6 +69,11 @@ tasks:
     cmds:
       - go run ./cmd/{{.BINARY}} {{.CLI_ARGS}}
 
+  backfill:
+    desc: Generate or import VictoriaMetrics historical samples
+    cmds:
+      - go run ./cmd/{{.BINARY}} backfill {{.CLI_ARGS}}
+
   docker-build:
     desc: Build the local Docker image
     cmds:

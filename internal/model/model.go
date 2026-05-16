@@ -37,6 +37,7 @@ type Record struct {
 	Model     string
 	SessionID string
 	Role      string
+	Timestamp time.Time
 	Tokens    TokenStats
 	ToolCalls uint64
 }
