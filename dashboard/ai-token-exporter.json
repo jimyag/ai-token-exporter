@@ -407,13 +407,13 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (tool, model, token_type) (clamp_min(increase(ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\",token_type=~\"$token_type\"}[1m]), 0))",
+          "expr": "sum by (tool, model, token_type) (clamp_min(delta(ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\",token_type=~\"$token_type\"}[$__interval]), 0))",
           "instant": false,
           "legendFormat": "{{tool}} / {{model}} / {{token_type}}",
           "refId": "A"
         }
       ],
-      "title": "Tokens per Minute",
+      "title": "Tokens per Interval",
       "type": "timeseries"
     },
     {
@@ -463,13 +463,13 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (tool, model) (clamp_min(increase(ai_token_exporter_tool_calls{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\"}[1m]), 0))",
+          "expr": "sum by (tool, model) (clamp_min(delta(ai_token_exporter_tool_calls{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\"}[$__interval]), 0))",
           "instant": false,
           "legendFormat": "{{tool}} / {{model}}",
           "refId": "A"
         }
       ],
-      "title": "Tool Calls per Minute",
+      "title": "Tool Calls per Interval",
       "type": "timeseries"
     },
     {
@@ -519,13 +519,13 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (tool) (clamp_min(increase(ai_token_exporter_sessions{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\"}[1m]), 0))",
+          "expr": "sum by (tool) (clamp_min(delta(ai_token_exporter_sessions{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\"}[$__interval]), 0))",
           "instant": false,
           "legendFormat": "{{tool}}",
           "refId": "A"
         }
       ],
-      "title": "Sessions per Minute",
+      "title": "Sessions per Interval",
       "type": "timeseries"
     },
     {
