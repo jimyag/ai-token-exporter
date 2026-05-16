@@ -131,6 +131,8 @@ scrape_configs:
 
 Import `dashboard/ai-token-exporter.json` into Grafana. The dashboard includes datasource, instance, hostname, tool, model, token type, and role filters.
 
+![AI Token Exporter Grafana dashboard](docs/images/grafana-dashboard.png)
+
 ## Release
 
 Releases are published when pushing a tag that starts with `v`.
