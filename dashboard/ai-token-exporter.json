@@ -580,8 +580,8 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (tool, model) (ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\",token_type=~\"$token_type\"})",
-          "instant": false,
+          "expr": "sort_desc(sum by (tool, model) (ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\",token_type=~\"$token_type\"}))",
+          "instant": true,
           "legendFormat": "{{tool}} / {{model}}",
           "refId": "A"
         }
@@ -621,9 +621,11 @@
           "calcs": [
             "lastNotNull"
           ],
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
@@ -677,9 +679,11 @@
           "calcs": [
             "lastNotNull"
           ],
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
@@ -733,9 +737,11 @@
           "calcs": [
             "lastNotNull"
           ],
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
@@ -789,9 +795,11 @@
           "calcs": [
             "lastNotNull"
           ],
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
@@ -849,9 +857,11 @@
           "calcs": [
             "lastNotNull"
           ],
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
