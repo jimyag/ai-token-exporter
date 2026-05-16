@@ -14,19 +14,18 @@ The exporter keeps an in-memory snapshot and serves it at `GET /metrics`. Scrape
 
 ## Install
 
-Build from source:
+### Binary Release
+
+Download a prebuilt archive from the GitHub release page. Replace `linux_amd64` with the target platform, such as `linux_arm64`, `darwin_arm64`, or `windows_amd64`.
 
 ```bash
-go install github.com/jimyag/ai-token-exporter/cmd/ai-token-exporter@latest
+curl -L https://github.com/jimyag/ai-token-exporter/releases/latest/download/ai-token-exporter_linux_amd64.tar.gz \
+  -o ai-token-exporter_linux_amd64.tar.gz
+tar -xzf ai-token-exporter_linux_amd64.tar.gz
+install -m 0755 ai-token-exporter /usr/local/bin/ai-token-exporter
 ```
 
-Run from the repository:
-
-```bash
-go run ./cmd/ai-token-exporter
-```
-
-Docker:
+### Docker
 
 ```bash
 docker run --rm -p 9108:9108 \
@@ -38,6 +37,38 @@ docker run --rm -p 9108:9108 \
   ghcr.io/jimyag/ai-token-exporter:latest
 ```
 
+On Linux, mount `$HOME/.config` instead of the macOS application support directory:
+
+```bash
+docker run --rm -p 9108:9108 \
+  -v "$HOME/.claude:/home/nonroot/.claude:ro" \
+  -v "$HOME/.codex:/home/nonroot/.codex:ro" \
+  -v "$HOME/.gemini:/home/nonroot/.gemini:ro" \
+  -v "$HOME/.copilot:/home/nonroot/.copilot:ro" \
+  -v "$HOME/.config:/home/nonroot/.config:ro" \
+  ghcr.io/jimyag/ai-token-exporter:latest
+```
+
+### Go Install
+
+```bash
+go install github.com/jimyag/ai-token-exporter/cmd/ai-token-exporter@latest
+```
+
+### Source Build
+
+```bash
+git clone https://github.com/jimyag/ai-token-exporter.git
+cd ai-token-exporter
+go build -trimpath -buildvcs=true -o bin/ai-token-exporter ./cmd/ai-token-exporter
+```
+
+With Task:
+
+```bash
+task build
+```
+
 ## Usage
 
 ```bash
@@ -46,6 +77,8 @@ ai-token-exporter \
   --scan-interval=30s \
   --enabled=claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli
 ```
+
+All flags are optional. The default listen address is `:9108`, the default scan interval is `30s`, and all supported analyzers are enabled by default.
 
 Check metrics:
 
@@ -65,16 +98,16 @@ ai-token-exporter --version
 
 Flags can be set with environment variables:
 
-| Flag | Environment variable | Default |
-| --- | --- | --- |
-| `--listen` | `AI_TOKEN_EXPORTER_LISTEN` | `:9108` |
-| `--scan-interval` | `AI_TOKEN_EXPORTER_SCAN_INTERVAL` | `30s` |
-| `--enabled` | `AI_TOKEN_EXPORTER_ENABLED` | `claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli` |
-| `--claude-dir` | `AI_TOKEN_EXPORTER_CLAUDE_DIR` | `~/.claude/projects` |
-| `--codex-dir` | `AI_TOKEN_EXPORTER_CODEX_DIR` | `~/.codex` |
-| `--copilot-dir` | `AI_TOKEN_EXPORTER_COPILOT_DIR` | `~/.copilot` |
-| `--gemini-dir` | `AI_TOKEN_EXPORTER_GEMINI_DIR` | `~/.gemini/tmp` |
-| `--gemini-config-dir` | `AI_TOKEN_EXPORTER_GEMINI_CONFIG_DIR` | `~/.gemini` |
+| Flag                  | Environment variable                  | Default                                                                                                                  |
+| --------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `--listen`            | `AI_TOKEN_EXPORTER_LISTEN`            | `:9108`                                                                                                                  |
+| `--scan-interval`     | `AI_TOKEN_EXPORTER_SCAN_INTERVAL`     | `30s`                                                                                                                    |
+| `--enabled`           | `AI_TOKEN_EXPORTER_ENABLED`           | `claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli`                                                            |
+| `--claude-dir`        | `AI_TOKEN_EXPORTER_CLAUDE_DIR`        | `~/.claude/projects`                                                                                                     |
+| `--codex-dir`         | `AI_TOKEN_EXPORTER_CODEX_DIR`         | `~/.codex`                                                                                                               |
+| `--copilot-dir`       | `AI_TOKEN_EXPORTER_COPILOT_DIR`       | `~/.copilot`                                                                                                             |
+| `--gemini-dir`        | `AI_TOKEN_EXPORTER_GEMINI_DIR`        | `~/.gemini/tmp`                                                                                                          |
+| `--gemini-config-dir` | `AI_TOKEN_EXPORTER_GEMINI_CONFIG_DIR` | `~/.gemini`                                                                                                              |
 | `--vscode-config-dir` | `AI_TOKEN_EXPORTER_VSCODE_CONFIG_DIR` | `os.UserConfigDir()`; for example `~/Library/Application Support` on macOS, `~/.config` on Linux, `%APPDATA%` on Windows |
 
 Default source locations:
@@ -114,9 +147,11 @@ Label values:
 
 Session and project identifiers are intentionally not exposed as labels. The exporter aggregates those locally into `tool` and `model` series to keep Prometheus cardinality low.
 
-## Prometheus
+## Prometheus / VictoriaMetrics Scrape
 
-Example scrape config:
+Prometheus and VictoriaMetrics can scrape the same `/metrics` endpoint. The exporter does not add `instance`, `job`, or host labels itself; those usually come from the scrape config.
+
+Single-node example:
 
 ```yaml
 scrape_configs:
@@ -125,6 +160,31 @@ scrape_configs:
       - targets: ["localhost:9108"]
         labels:
           hostname: "local-dev"
+```
+
+Multi-node example. Keep the labels used by live scrapes and historical backfills aligned. The dashboard filters by `hostname`; if you also use a custom label such as `nodename`, keep both labels on the scrape target:
+
+```yaml
+scrape_configs:
+  - job_name: ai-token-exporter
+    static_configs:
+      - targets: ["192.0.2.10:21112"]
+        labels:
+          hostname: "node-a"
+          nodename: "node-a"
+      - targets: ["192.0.2.11:21112"]
+        labels:
+          hostname: "node-b"
+          nodename: "node-b"
+```
+
+For VictoriaMetrics single-node deployments, pass the same YAML file to `-promscrape.config`:
+
+```bash
+victoria-metrics-prod \
+  -storageDataPath=/var/lib/victoria-metrics \
+  -retentionPeriod=12 \
+  -promscrape.config=/etc/victoria-metrics/promscrape.yml
 ```
 
 ## VictoriaMetrics Backfill
@@ -141,8 +201,8 @@ ai-token-exporter backfill \
   --to=2026-05-16T00:00:00+08:00 \
   --step=1m \
   --job=ai-token-exporter \
-  --instance=100.111.111.1:21112 \
-  --hostname=workstation-1
+  --instance=192.0.2.10:21112 \
+  --hostname=workstation-a
 ```
 
 Import into VictoriaMetrics. By default, this replaces existing `ai-token-exporter` data for the same `job`, `instance`, and `hostname` before importing:
@@ -151,8 +211,8 @@ Import into VictoriaMetrics. By default, this replaces existing `ai-token-export
 ai-token-exporter backfill \
   --vm-url=http://victoriametrics:8428/api/v1/import/prometheus \
   --job=ai-token-exporter \
-  --instance=100.111.111.1:21112 \
-  --hostname=workstation-1
+  --instance=192.0.2.10:21112 \
+  --hostname=workstation-a
 ```
 
 Append without deleting existing series:
@@ -162,19 +222,41 @@ ai-token-exporter backfill \
   --replace-existing=false \
   --vm-url=http://victoriametrics:8428/api/v1/import/prometheus \
   --job=ai-token-exporter \
-  --instance=100.111.111.1:21112 \
-  --hostname=workstation-1
+  --instance=192.0.2.10:21112 \
+  --hostname=workstation-a
 ```
 
 The default replacement path deletes only series matching `{__name__=~"ai_token_exporter_.*",job=...,instance=...,hostname=...}` after the import file is generated successfully and before it is posted to VictoriaMetrics. For VictoriaMetrics cluster deployments, pass `--delete-url` if the delete endpoint is not reachable at the URL inferred from `--vm-url`.
 
 Set `--instance` and `--hostname` to the same labels used by your scrape config so Grafana filters match live and backfilled data. The backfill imports usage series, message counts, tool calls, sessions, and build info; scan health/source-file metrics remain live-only.
 
+Example commands for a shared VictoriaMetrics endpoint. Run each command on the matching node so the exporter reads that node's local AI tool logs:
+
+```bash
+# node-a
+ai-token-exporter backfill \
+  --vm-url=https://vm.example.com/api/v1/import/prometheus \
+  --job=ai-token-exporter \
+  --instance=192.0.2.10:21112 \
+  --hostname=node-a
+
+# node-b
+ai-token-exporter backfill \
+  --vm-url=https://vm.example.com/api/v1/import/prometheus \
+  --job=ai-token-exporter \
+  --instance=192.0.2.11:21112 \
+  --hostname=node-b
+```
+
+The `--instance` value must match the scrape target label exactly. If live scrape uses `instance="192.0.2.10:21112"`, backfill should use the same value; otherwise Grafana will show historical and live data as different series.
+
 ## Grafana
 
 Import `dashboard/ai-token-exporter.json` into Grafana. The dashboard includes datasource, instance, hostname, tool, model, token type, and role filters.
 
 ![AI Token Exporter Grafana dashboard](docs/images/grafana-dashboard.png)
+
+![AI Token Exporter Grafana dashboard panels](docs/images/grafana-dashboard-panels.png)
 
 ## Release
 
