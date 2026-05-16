@@ -73,6 +73,34 @@ func TestWritePrometheusImportCumulativeSamples(t *testing.T) {
 	}
 }
 
+func TestInferDeleteURL(t *testing.T) {
+	tests := map[string]string{
+		"http://localhost:8428/api/v1/import/prometheus":                    "http://localhost:8428/api/v1/admin/tsdb/delete_series",
+		"http://vminsert:8480/insert/0/prometheus/api/v1/import/prometheus": "http://vminsert:8480/delete/0/prometheus/api/v1/admin/tsdb/delete_series",
+	}
+	for input, want := range tests {
+		got, err := inferDeleteURL(input)
+		if err != nil {
+			t.Fatalf("inferDeleteURL(%q): %v", input, err)
+		}
+		if got != want {
+			t.Fatalf("inferDeleteURL(%q) = %q, want %q", input, got, want)
+		}
+	}
+}
+
+func TestDeleteSelectorScopesToExporterLabels(t *testing.T) {
+	got := deleteSelector(Options{
+		Job:      "ai-token-exporter",
+		Instance: `host:9108`,
+		Hostname: `work"station`,
+	})
+	want := `{__name__=~"ai_token_exporter_.*",job="ai-token-exporter",instance="host:9108",hostname="work\"station"}`
+	if got != want {
+		t.Fatalf("delete selector = %q, want %q", got, want)
+	}
+}
+
 func assertContains(t *testing.T, got, want string) {
 	t.Helper()
 	if !strings.Contains(got, want) {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -15,15 +16,17 @@ import (
 )
 
 type Options struct {
-	From     time.Time
-	To       time.Time
-	Step     time.Duration
-	Job      string
-	Instance string
-	Hostname string
-	Version  string
-	Commit   string
-	VMURL    string
+	From            time.Time
+	To              time.Time
+	Step            time.Duration
+	Job             string
+	Instance        string
+	Hostname        string
+	Version         string
+	Commit          string
+	VMURL           string
+	DeleteURL       string
+	ReplaceExisting bool
 }
 
 type Result struct {
@@ -48,6 +51,11 @@ func Run(ctx context.Context, analyzers []analyzer.Analyzer, options Options, st
 	if options.VMURL == "" {
 		_, err = io.Copy(stdout, &buf)
 		return result, err
+	}
+	if options.ReplaceExisting {
+		if err := deleteExisting(ctx, options); err != nil {
+			return result, err
+		}
 	}
 	return result, postVictoriaMetrics(ctx, options.VMURL, &buf)
 }
@@ -328,4 +336,69 @@ func postVictoriaMetrics(ctx context.Context, url string, body *bytes.Buffer) er
 		return fmt.Errorf("victoriametrics import failed: status=%s body=%s", resp.Status, strings.TrimSpace(string(data)))
 	}
 	return nil
+}
+
+func deleteExisting(ctx context.Context, options Options) error {
+	deleteURL := strings.TrimSpace(options.DeleteURL)
+	if deleteURL == "" {
+		var err error
+		deleteURL, err = inferDeleteURL(options.VMURL)
+		if err != nil {
+			return err
+		}
+	}
+
+	form := url.Values{}
+	form.Set("match[]", deleteSelector(options))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, deleteURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("victoriametrics delete failed: status=%s body=%s", resp.Status, strings.TrimSpace(string(data)))
+	}
+	return nil
+}
+
+func inferDeleteURL(importURL string) (string, error) {
+	parsed, err := url.Parse(importURL)
+	if err != nil {
+		return "", err
+	}
+	if strings.Contains(parsed.Path, "/insert/") && strings.HasSuffix(parsed.Path, "/prometheus/api/v1/import/prometheus") {
+		parsed.Path = strings.Replace(parsed.Path, "/insert/", "/delete/", 1)
+		parsed.Path = strings.TrimSuffix(parsed.Path, "/api/v1/import/prometheus") + "/api/v1/admin/tsdb/delete_series"
+		parsed.RawQuery = ""
+		return parsed.String(), nil
+	}
+	if strings.HasSuffix(parsed.Path, "/api/v1/import/prometheus") {
+		parsed.Path = strings.TrimSuffix(parsed.Path, "/api/v1/import/prometheus") + "/api/v1/admin/tsdb/delete_series"
+		parsed.RawQuery = ""
+		return parsed.String(), nil
+	}
+	return "", fmt.Errorf("cannot infer delete url from %q; pass --delete-url", importURL)
+}
+
+func deleteSelector(options Options) string {
+	labels := map[string]string{
+		"job":      nonEmpty(options.Job, "ai-token-exporter"),
+		"instance": nonEmpty(options.Instance, "backfill"),
+		"hostname": nonEmpty(options.Hostname, "unknown"),
+	}
+	keys := []string{"job", "instance", "hostname"}
+	parts := []string{`__name__=~"ai_token_exporter_.*"`}
+	for _, key := range keys {
+		if labels[key] == "" {
+			continue
+		}
+		parts = append(parts, fmt.Sprintf(`%s="%s"`, key, escapeLabelValue(labels[key])))
+	}
+	return "{" + strings.Join(parts, ",") + "}"
 }
