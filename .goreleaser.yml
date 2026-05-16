@@ -4,7 +4,7 @@ project_name: ai-token-exporter
 
 builds:
   - id: ai-token-exporter
-    main: ./cmd/ai-token-exporter/main.go
+    main: ./cmd/ai-token-exporter
     binary: ai-token-exporter
     env:
       - CGO_ENABLED=0
