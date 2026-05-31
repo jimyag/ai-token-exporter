@@ -423,6 +423,38 @@
       },
       "fieldConfig": {
         "defaults": {
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -441,6 +473,152 @@
         "w": 12,
         "x": 0,
         "y": 20
+      },
+      "id": 17,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (tool, model, token_type) (clamp_min(delta(ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\",token_type=~\"$token_type\"}[1h]), 0))",
+          "instant": false,
+          "interval": "1h",
+          "legendFormat": "{{tool}} / {{model}} / {{token_type}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Hourly Token Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 18,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (tool, model, token_type) (clamp_min(delta(ai_token_exporter_tokens{instance=~\"$instance\",hostname=~\"$hostname\",tool=~\"$tool\",model=~\"$model\",token_type=~\"$token_type\"}[1d]), 0))",
+          "instant": false,
+          "interval": "1d",
+          "legendFormat": "{{tool}} / {{model}} / {{token_type}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Daily Token Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
       },
       "id": 15,
       "options": {
@@ -496,7 +674,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 20
+        "y": 28
       },
       "id": 16,
       "options": {
@@ -552,7 +730,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 28
+        "y": 36
       },
       "id": 6,
       "options": {
@@ -613,7 +791,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 28
+        "y": 36
       },
       "id": 7,
       "options": {
@@ -671,7 +849,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 36
+        "y": 44
       },
       "id": 8,
       "options": {
@@ -729,7 +907,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 36
+        "y": 44
       },
       "id": 9,
       "options": {
@@ -787,7 +965,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 36
+        "y": 44
       },
       "id": 10,
       "options": {
@@ -849,7 +1027,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 44
+        "y": 52
       },
       "id": 11,
       "options": {
@@ -907,7 +1085,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 44
+        "y": 52
       },
       "id": 12,
       "options": {
@@ -984,7 +1162,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 44
+        "y": 52
       },
       "id": 13,
       "options": {
@@ -1200,6 +1378,6 @@
   "timezone": "browser",
   "title": "AI Token Exporter",
   "uid": "ai-token-exporter",
-  "version": 5,
+  "version": 6,
   "weekStart": ""
 }
