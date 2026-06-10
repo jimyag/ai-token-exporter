@@ -8,6 +8,7 @@ const (
 	ToolCopilotCLI    = "copilot_cli"
 	ToolGitHubCopilot = "github_copilot"
 	ToolGeminiCLI     = "gemini_cli"
+	ToolAgy           = "agy"
 
 	RoleUser      = "user"
 	RoleAssistant = "assistant"

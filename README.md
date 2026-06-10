@@ -7,6 +7,7 @@ It reads session logs from:
 - Claude Code
 - Codex CLI
 - Gemini CLI
+- Antigravity CLI (`agy`)
 - GitHub Copilot CLI
 - GitHub Copilot Chat sessions from VS Code-compatible editors
 
@@ -75,7 +76,7 @@ task build
 ai-token-exporter \
   --listen=:9108 \
   --scan-interval=30s \
-  --enabled=claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli
+  --enabled=claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli,agy
 ```
 
 All flags are optional. The default listen address is `:9108`, the default scan interval is `30s`, and all supported analyzers are enabled by default.
@@ -102,12 +103,13 @@ Flags can be set with environment variables:
 | --------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `--listen`            | `AI_TOKEN_EXPORTER_LISTEN`            | `:9108`                                                                                                                  |
 | `--scan-interval`     | `AI_TOKEN_EXPORTER_SCAN_INTERVAL`     | `30s`                                                                                                                    |
-| `--enabled`           | `AI_TOKEN_EXPORTER_ENABLED`           | `claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli`                                                            |
+| `--enabled`           | `AI_TOKEN_EXPORTER_ENABLED`           | `claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli,agy`                                                        |
 | `--claude-dir`        | `AI_TOKEN_EXPORTER_CLAUDE_DIR`        | `~/.claude/projects`                                                                                                     |
 | `--codex-dir`         | `AI_TOKEN_EXPORTER_CODEX_DIR`         | `~/.codex`                                                                                                               |
 | `--copilot-dir`       | `AI_TOKEN_EXPORTER_COPILOT_DIR`       | `~/.copilot`                                                                                                             |
 | `--gemini-dir`        | `AI_TOKEN_EXPORTER_GEMINI_DIR`        | `~/.gemini/tmp`                                                                                                          |
 | `--gemini-config-dir` | `AI_TOKEN_EXPORTER_GEMINI_CONFIG_DIR` | `~/.gemini`                                                                                                              |
+| `--agy-dir`           | `AI_TOKEN_EXPORTER_AGY_DIR`           | `~/.gemini/antigravity-cli/conversations`                                                                                |
 | `--vscode-config-dir` | `AI_TOKEN_EXPORTER_VSCODE_CONFIG_DIR` | `os.UserConfigDir()`; for example `~/Library/Application Support` on macOS, `~/.config` on Linux, `%APPDATA%` on Windows |
 
 Default source locations:
@@ -115,6 +117,7 @@ Default source locations:
 - Claude Code: `~/.claude/projects/*/*.jsonl`
 - Codex CLI: `~/.codex/sessions/**/*.jsonl`
 - Gemini CLI: `~/.gemini/tmp/**/chats/*.{json,jsonl}`
+- Antigravity CLI (`agy`): `~/.gemini/antigravity-cli/conversations/**/*.db`
 - Copilot CLI: `~/.copilot/session-state/**/*.jsonl`, `~/.copilot/history-session-state/**/*.jsonl`
 - GitHub Copilot Chat: `{user config dir}/{Code,Code - Insiders,Cursor,Windsurf,VSCodium,Positron,Antigravity}/User/workspaceStorage/*/chatSessions/*.json`
 

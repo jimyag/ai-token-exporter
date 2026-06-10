@@ -9,6 +9,7 @@ Supported tools for v1:
 - Claude Code
 - Codex CLI
 - Gemini CLI
+- Antigravity CLI (`agy`)
 - GitHub Copilot CLI
 - GitHub Copilot Chat sessions from VS Code-compatible editors
 
@@ -34,7 +35,7 @@ ai_token_exporter_build_info{version,commit}
 
 Label values:
 
-- `tool`: `claude_code`, `codex_cli`, `copilot_cli`, `github_copilot`, `gemini_cli`
+- `tool`: `claude_code`, `codex_cli`, `copilot_cli`, `github_copilot`, `gemini_cli`, `agy`
 - `token_type`: `input`, `output`, `reasoning`, `cache_creation`, `cache_read`, `cached`
 - `role`: `user`, `assistant`
 - `model`: normalized model name, falling back through tool defaults before `unknown`
@@ -74,6 +75,7 @@ Tool-specific defaults:
 - Claude Code: read known Claude settings files when available, then fall back to `unknown`.
 - Codex CLI: read Codex config from the user's Codex home when available; if no configured model is found, use `unknown`.
 - Gemini CLI: read model from each Gemini message first, then fall back to the configured Gemini config directory, then `unknown`.
+- Antigravity CLI (`agy`): read model and token usage from `gen_metadata` when available, then fall back to the last seen model or `gemini-2.5-flash`.
 - Copilot CLI: read model from session start/context events first, then any Copilot CLI config if available, then `unknown`.
 - GitHub Copilot Chat: read `modelId` from each request first; if missing, use any session/editor configuration discovered locally, then `unknown`.
 
@@ -86,6 +88,7 @@ Default source locations:
 - Claude Code: `~/.claude/projects/*/*.jsonl`
 - Codex CLI: `~/.codex/sessions/**/*.jsonl`
 - Gemini CLI: `~/.gemini/tmp/**/chats/*.{json,jsonl}`
+- Antigravity CLI (`agy`): `~/.gemini/antigravity-cli/conversations/**/*.db`
 - Copilot CLI: `~/.copilot/session-state/**/*.jsonl`, `~/.copilot/history-session-state/**/*.jsonl`
 - GitHub Copilot Chat: `{user config dir}/{Code,Code - Insiders,Cursor,Windsurf,VSCodium,Positron,Antigravity}/User/workspaceStorage/*/chatSessions/*.json`
 
@@ -100,6 +103,7 @@ AI_TOKEN_EXPORTER_CODEX_DIR
 AI_TOKEN_EXPORTER_COPILOT_DIR
 AI_TOKEN_EXPORTER_GEMINI_DIR
 AI_TOKEN_EXPORTER_GEMINI_CONFIG_DIR
+AI_TOKEN_EXPORTER_AGY_DIR
 AI_TOKEN_EXPORTER_VSCODE_CONFIG_DIR
 ```
 
@@ -109,7 +113,7 @@ Default CLI:
 ai-token-exporter \
   --listen=:9108 \
   --scan-interval=30s \
-  --enabled=claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli
+  --enabled=claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli,agy
 ```
 
 ## Architecture
@@ -127,6 +131,7 @@ internal/analyzer/
 internal/analyzer/claude/
 internal/analyzer/codex/
 internal/analyzer/gemini/
+internal/analyzer/agy/
 internal/analyzer/copilotcli/
 internal/analyzer/copilotvscode/
 internal/model/
@@ -230,6 +235,15 @@ Gemini CLI:
 - Map `tokens.input` to input, `tokens.output` to output, `tokens.thoughts` to reasoning, and `tokens.cached` to cached.
 - Count tool calls from `toolCalls`.
 
+Antigravity CLI (`agy`):
+
+- Parse `~/.gemini/antigravity-cli/conversations/**/*.db`.
+- Read conversation steps from SQLite table `steps`.
+- Decode protobuf wire-format `step_payload` enough to extract user/assistant text, timestamps, and tool calls.
+- Read model and token usage from optional SQLite table `gen_metadata`.
+- Map prompt tokens to input, candidate tokens to output, and reasoning tokens to reasoning.
+- Count tool calls from step execution metadata.
+
 Copilot CLI:
 
 - Parse `session.start`, `session.model_change`, `user.message`, `assistant.*`, `tool.execution_*`, and shutdown metrics.
@@ -253,6 +267,7 @@ Required tests:
 - Codex parser handles `last_token_usage` and `total_token_usage` deltas.
 - Copilot CLI parser prefers shutdown metrics when available.
 - Gemini CLI parser handles JSON sessions, JSONL latest-message updates, token fields, and tool calls.
+- Antigravity CLI parser handles SQLite steps, protobuf payloads, gen metadata, and tool calls.
 - GitHub Copilot parser estimates tokens and normalizes `modelId`.
 - Aggregation handles multiple sessions and models.
 - Missing model falls back through default config and finally `unknown`.

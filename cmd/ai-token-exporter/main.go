@@ -12,6 +12,7 @@ import (
 
 	_ "github.com/jimmicro/version"
 	"github.com/jimyag/ai-token-exporter/internal/analyzer"
+	"github.com/jimyag/ai-token-exporter/internal/analyzer/agy"
 	"github.com/jimyag/ai-token-exporter/internal/analyzer/claude"
 	"github.com/jimyag/ai-token-exporter/internal/analyzer/codex"
 	"github.com/jimyag/ai-token-exporter/internal/analyzer/copilotcli"
@@ -79,6 +80,9 @@ func buildAnalyzers(cfg config.Config) []analyzer.Analyzer {
 	}
 	if cfg.Enabled[model.ToolGeminiCLI] {
 		analyzers = append(analyzers, gemini.New(cfg.GeminiDir, cfg.GeminiConfigDir))
+	}
+	if cfg.Enabled[model.ToolAgy] {
+		analyzers = append(analyzers, agy.New(cfg.AgyDir))
 	}
 	return analyzers
 }
