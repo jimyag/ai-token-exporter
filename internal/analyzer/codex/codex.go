@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jimyag/ai-token-exporter/internal/analyzer"
 	"github.com/jimyag/ai-token-exporter/internal/hash"
@@ -14,17 +15,19 @@ import (
 )
 
 type Analyzer struct {
-	CodexDir     string
-	SessionsDir  string
-	DefaultModel string
+	CodexDir            string
+	SessionsDir         string
+	ArchivedSessionsDir string
+	DefaultModel        string
 }
 
 func New(codexDir string) *Analyzer {
 	defaultModel := analyzer.ReadDefaultModelFromText(filepath.Join(codexDir, "config.toml"))
 	return &Analyzer{
-		CodexDir:     codexDir,
-		SessionsDir:  filepath.Join(codexDir, "sessions"),
-		DefaultModel: defaultModel,
+		CodexDir:            codexDir,
+		SessionsDir:         filepath.Join(codexDir, "sessions"),
+		ArchivedSessionsDir: filepath.Join(codexDir, "archived_sessions"),
+		DefaultModel:        defaultModel,
 	}
 }
 
@@ -33,11 +36,51 @@ func (a *Analyzer) Name() string {
 }
 
 func (a *Analyzer) Discover(ctx context.Context) ([]model.Source, error) {
-	return analyzer.WalkFiles(ctx, a.SessionsDir, a.ValidPath)
+	var sources []model.Source
+	seen := make(map[string]bool)
+	for _, dir := range []string{a.SessionsDir, a.ArchivedSessionsDir} {
+		discovered, err := analyzer.WalkFiles(ctx, dir, a.ValidPath)
+		if err != nil {
+			return nil, err
+		}
+		for _, source := range discovered {
+			identity := a.sessionPath(source.Path)
+			if seen[identity] {
+				continue
+			}
+			seen[identity] = true
+			sources = append(sources, source)
+		}
+	}
+	return sources, nil
 }
 
 func (a *Analyzer) ValidPath(path string) bool {
 	return filepath.Ext(path) == ".jsonl"
+}
+
+func (a *Analyzer) sessionPath(path string) string {
+	relative, err := filepath.Rel(a.ArchivedSessionsDir, path)
+	if err != nil || relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return path
+	}
+
+	name := filepath.Base(path)
+	const prefix = "rollout-"
+	if !strings.HasPrefix(name, prefix) || len(name) < len(prefix)+len("2006-01-02") {
+		return path
+	}
+	date, err := time.Parse("2006-01-02", name[len(prefix):len(prefix)+len("2006-01-02")])
+	if err != nil {
+		return path
+	}
+	return filepath.Join(
+		a.SessionsDir,
+		date.Format("2006"),
+		date.Format("01"),
+		date.Format("02"),
+		name,
+	)
 }
 
 type wrapper struct {
@@ -66,7 +109,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 	}
 	defer file.Close()
 
-	sessionID := hash.Sum(source.Path)
+	sessionID := hash.Sum(a.sessionPath(source.Path))
 	currentModel := a.DefaultModel
 	var previous *tokenUsage
 	var toolCalls uint64

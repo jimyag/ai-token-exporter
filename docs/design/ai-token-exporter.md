@@ -86,7 +86,7 @@ Default model lookup must be best-effort. Failure to read or parse a config file
 Default source locations:
 
 - Claude Code: `~/.claude/projects/*/*.jsonl`
-- Codex CLI: `~/.codex/sessions/**/*.jsonl`
+- Codex CLI: `~/.codex/sessions/**/*.jsonl` and `~/.codex/archived_sessions/**/*.jsonl`
 - Gemini CLI: `~/.gemini/tmp/**/chats/*.{json,jsonl}`
 - Antigravity CLI (`agy`): `~/.gemini/antigravity-cli/conversations/**/*.db`
 - Copilot CLI: `~/.copilot/session-state/**/*.jsonl`, `~/.copilot/history-session-state/**/*.jsonl`

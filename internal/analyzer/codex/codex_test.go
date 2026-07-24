@@ -9,6 +9,106 @@ import (
 	"github.com/jimyag/ai-token-exporter/internal/model"
 )
 
+const sessionFileName = "rollout-2026-07-22T12-34-56-019f8a69-8cab-75b0-8f7c-b6b6339ed90b.jsonl"
+
+const testSession = `{"timestamp":"2026-07-22T12:34:56Z","type":"session_meta","payload":{"model":"gpt-5"}}
+{"timestamp":"2026-07-22T12:35:00Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"hello"}]}}
+{"timestamp":"2026-07-22T12:35:01Z","type":"event_msg","payload":{"type":"token_count","info":{"last_token_usage":{"input_tokens":10,"output_tokens":2,"cached_input_tokens":5,"reasoning_output_tokens":1,"total_tokens":12}}}}
+`
+
+func TestDiscoverIncludesArchivedSessions(t *testing.T) {
+	root := t.TempDir()
+	activeDir := filepath.Join(root, "sessions", "2026", "07", "22")
+	archivedDir := filepath.Join(root, "archived_sessions")
+	if err := os.MkdirAll(activeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(archivedDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	activePath := filepath.Join(activeDir, "active.jsonl")
+	archivedPath := filepath.Join(archivedDir, sessionFileName)
+	if err := os.WriteFile(activePath, []byte(testSession), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(archivedPath, []byte(testSession), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	sources, err := New(root).Discover(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := len(sources), 2; got != want {
+		t.Fatalf("sources = %d, want %d", got, want)
+	}
+}
+
+func TestDiscoverDeduplicatesActiveAndArchivedCopies(t *testing.T) {
+	root := t.TempDir()
+	activeDir := filepath.Join(root, "sessions", "2026", "07", "22")
+	archivedDir := filepath.Join(root, "archived_sessions")
+	if err := os.MkdirAll(activeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(archivedDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	activePath := filepath.Join(activeDir, sessionFileName)
+	archivedPath := filepath.Join(archivedDir, sessionFileName)
+	if err := os.WriteFile(activePath, []byte(testSession), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(archivedPath, []byte(testSession), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	sources, err := New(root).Discover(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := len(sources), 1; got != want {
+		t.Fatalf("sources = %d, want %d", got, want)
+	}
+	if sources[0].Path != activePath {
+		t.Fatalf("source path = %q, want active path %q", sources[0].Path, activePath)
+	}
+}
+
+func TestSessionIDRemainsStableAfterArchiving(t *testing.T) {
+	root := t.TempDir()
+	activePath := filepath.Join(root, "sessions", "2026", "07", "22", sessionFileName)
+	archivedPath := filepath.Join(root, "archived_sessions", sessionFileName)
+	if err := os.MkdirAll(filepath.Dir(activePath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(archivedPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(activePath, []byte(testSession), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(archivedPath, []byte(testSession), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	a := New(root)
+	activeRecords, err := a.Parse(context.Background(), model.Source{Path: activePath})
+	if err != nil {
+		t.Fatal(err)
+	}
+	archivedRecords, err := a.Parse(context.Background(), model.Source{Path: archivedPath})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(activeRecords) == 0 || len(archivedRecords) == 0 {
+		t.Fatal("expected records from both active and archived sessions")
+	}
+	if activeRecords[0].SessionID != archivedRecords[0].SessionID {
+		t.Fatalf("session IDs differ: active=%q archived=%q", activeRecords[0].SessionID, archivedRecords[0].SessionID)
+	}
+}
+
 func TestParseLastUsageAndTotalDelta(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "sessions"), 0o755); err != nil {
