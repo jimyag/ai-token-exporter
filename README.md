@@ -132,6 +132,8 @@ ai_token_exporter_tool_calls{tool,model}
 ai_token_exporter_sessions{tool}
 ai_token_exporter_source_files{tool}
 ai_token_exporter_source_parse_errors{tool}
+ai_token_exporter_scan_cache_hits{tool}
+ai_token_exporter_scan_cache_misses{tool}
 ai_token_exporter_last_scan_timestamp_seconds
 ai_token_exporter_last_successful_scan_timestamp_seconds
 ai_token_exporter_scan_duration_seconds
@@ -149,6 +151,8 @@ Label values:
 `input` is gross input, including cached input when the source reports it. `cached` is cache hit/reused input and does not include cache creation.
 
 Session and project identifiers are intentionally not exposed as labels. The exporter aggregates those locally into `tool` and `model` series to keep Prometheus cardinality low.
+
+The scanner keeps compact per-file aggregates in memory and reparses only new or changed files. Cache entries contain file metadata, aggregate counters, and session IDs; raw log contents and parsed records are not retained. SQLite WAL metadata is included when checking database sources. The first scan after a restart is always a full scan.
 
 ## Prometheus / VictoriaMetrics Scrape
 

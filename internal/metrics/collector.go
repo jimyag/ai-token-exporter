@@ -20,6 +20,8 @@ type Collector struct {
 	sessionsDesc     *prometheus.Desc
 	sourceFilesDesc  *prometheus.Desc
 	parseErrorsDesc  *prometheus.Desc
+	cacheHitsDesc    *prometheus.Desc
+	cacheMissesDesc  *prometheus.Desc
 	lastScanDesc     *prometheus.Desc
 	lastSuccessDesc  *prometheus.Desc
 	scanDurationDesc *prometheus.Desc
@@ -37,6 +39,8 @@ func NewCollector(provider SnapshotProvider) *Collector {
 		sessionsDesc:     prometheus.NewDesc("ai_token_exporter_sessions", "Distinct sessions discovered in the latest scan.", []string{"tool"}, nil),
 		sourceFilesDesc:  prometheus.NewDesc("ai_token_exporter_source_files", "Source files discovered in the latest scan.", []string{"tool"}, nil),
 		parseErrorsDesc:  prometheus.NewDesc("ai_token_exporter_source_parse_errors", "Source files that failed to parse in the latest scan.", []string{"tool"}, nil),
+		cacheHitsDesc:    prometheus.NewDesc("ai_token_exporter_scan_cache_hits", "Unchanged source files reused from the in-memory cache in the latest scan.", []string{"tool"}, nil),
+		cacheMissesDesc:  prometheus.NewDesc("ai_token_exporter_scan_cache_misses", "Source files parsed in the latest scan because no valid cache entry existed.", []string{"tool"}, nil),
 		lastScanDesc:     prometheus.NewDesc("ai_token_exporter_last_scan_timestamp_seconds", "Unix timestamp when the latest scan finished.", nil, nil),
 		lastSuccessDesc:  prometheus.NewDesc("ai_token_exporter_last_successful_scan_timestamp_seconds", "Unix timestamp when the latest successful scan finished.", nil, nil),
 		scanDurationDesc: prometheus.NewDesc("ai_token_exporter_scan_duration_seconds", "Duration of the latest scan in seconds.", nil, nil),
@@ -52,6 +56,8 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.sessionsDesc
 	ch <- c.sourceFilesDesc
 	ch <- c.parseErrorsDesc
+	ch <- c.cacheHitsDesc
+	ch <- c.cacheMissesDesc
 	ch <- c.lastScanDesc
 	ch <- c.lastSuccessDesc
 	ch <- c.scanDurationDesc
@@ -88,6 +94,8 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		if stat.ParseErrors > 0 {
 			ch <- prometheus.MustNewConstMetric(c.parseErrorsDesc, prometheus.GaugeValue, float64(stat.ParseErrors), tool)
 		}
+		ch <- prometheus.MustNewConstMetric(c.cacheHitsDesc, prometheus.GaugeValue, float64(stat.CacheHits), tool)
+		ch <- prometheus.MustNewConstMetric(c.cacheMissesDesc, prometheus.GaugeValue, float64(stat.CacheMisses), tool)
 	}
 	if !snapshot.LastScan.IsZero() {
 		ch <- prometheus.MustNewConstMetric(c.lastScanDesc, prometheus.GaugeValue, float64(snapshot.LastScan.Unix()))

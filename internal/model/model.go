@@ -58,6 +58,8 @@ type ToolSnapshot struct {
 	SourceFiles uint64
 	ParseErrors uint64
 	Sessions    uint64
+	CacheHits   uint64
+	CacheMisses uint64
 }
 
 type Snapshot struct {

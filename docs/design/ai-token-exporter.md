@@ -26,6 +26,8 @@ ai_token_exporter_tool_calls{tool,model}
 ai_token_exporter_sessions{tool}
 ai_token_exporter_source_files{tool}
 ai_token_exporter_source_parse_errors{tool}
+ai_token_exporter_scan_cache_hits{tool}
+ai_token_exporter_scan_cache_misses{tool}
 ai_token_exporter_last_scan_timestamp_seconds
 ai_token_exporter_last_successful_scan_timestamp_seconds
 ai_token_exporter_scan_duration_seconds
@@ -52,6 +54,8 @@ Metric semantics:
 - `ai_token_exporter_sessions`: number of distinct sessions discovered for a tool in the latest scan.
 - `ai_token_exporter_source_files`: number of source files discovered for a tool in the latest scan.
 - `ai_token_exporter_source_parse_errors`: number of source files that failed to parse in the latest scan.
+- `ai_token_exporter_scan_cache_hits`: unchanged source files reused from the in-memory cache in the latest scan.
+- `ai_token_exporter_scan_cache_misses`: source files parsed because no valid cache entry existed in the latest scan.
 - `ai_token_exporter_last_scan_timestamp_seconds`: Unix timestamp when the latest scan finished.
 - `ai_token_exporter_last_successful_scan_timestamp_seconds`: Unix timestamp when the latest successful scan finished.
 - `ai_token_exporter_scan_duration_seconds`: duration of the latest scan.
@@ -179,7 +183,7 @@ type Record struct {
 }
 ```
 
-The scanner should aggregate exported metrics by `tool` and `model`. It may retain session hashes internally only to compute `ai_token_exporter_sessions{tool}`.
+The scanner should aggregate exported metrics by `tool` and `model`. It retains a compact contribution per source file, keyed by path and invalidated by file size or modification time. SQLite database signatures also include WAL existence, size, and modification time. Unchanged files reuse their aggregate counters and session IDs; new or changed files are reparsed, deleted files are removed, and parse failures are retried on the next scan. Raw log contents and full parsed records are not retained. The cache is process-local, so the first scan after startup remains a full scan.
 
 ## VictoriaMetrics Backfill
 

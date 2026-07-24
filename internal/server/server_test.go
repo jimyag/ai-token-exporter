@@ -27,7 +27,7 @@ func TestMetricsEndpointUsesPrometheusTextFormat(t *testing.T) {
 			},
 		},
 		Tools: map[string]model.ToolSnapshot{
-			model.ToolCodexCLI: {SourceFiles: 1, Sessions: 1},
+			model.ToolCodexCLI: {SourceFiles: 1, Sessions: 1, CacheHits: 1},
 		},
 		LastScan:           time.Unix(100, 0),
 		LastSuccessfulScan: time.Unix(100, 0),
@@ -45,6 +45,8 @@ func TestMetricsEndpointUsesPrometheusTextFormat(t *testing.T) {
 		"# HELP ai_token_exporter_tokens",
 		`ai_token_exporter_tokens{model="gpt-5",token_type="input",tool="codex_cli"} 10`,
 		`ai_token_exporter_messages{model="gpt-5",role="assistant",tool="codex_cli"} 3`,
+		`ai_token_exporter_scan_cache_hits{tool="codex_cli"} 1`,
+		`ai_token_exporter_scan_cache_misses{tool="codex_cli"} 0`,
 		`ai_token_exporter_build_info{commit="abc",version="test"} 1`,
 	} {
 		if !strings.Contains(body, want) {
