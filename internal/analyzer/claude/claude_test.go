@@ -43,3 +43,25 @@ func TestParseUsageCacheAndDedup(t *testing.T) {
 		t.Fatalf("tool calls = %d, want 1", assistant.ToolCalls)
 	}
 }
+
+func TestParseKeepsFinalStreamingUsage(t *testing.T) {
+	root := t.TempDir()
+	projectDir := filepath.Join(root, "project")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(projectDir, "session.jsonl")
+	content := `{"type":"assistant","requestId":"req","message":{"id":"msg","role":"assistant","model":"claude-sonnet-4","content":[{"type":"tool_use"}],"usage":{"input_tokens":10,"output_tokens":1}}}
+{"type":"assistant","requestId":"req","message":{"id":"msg","role":"assistant","model":"claude-sonnet-4","content":[],"usage":{"input_tokens":10,"output_tokens":5}}}
+`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	records, err := New(root).Parse(t.Context(), model.Source{Path: path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != 1 || records[0].Tokens.Output != 5 || records[0].ToolCalls != 1 {
+		t.Fatalf("streaming usage = %+v", records)
+	}
+}

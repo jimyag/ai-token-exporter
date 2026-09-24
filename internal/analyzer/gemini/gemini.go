@@ -101,6 +101,15 @@ func (a *Analyzer) parseJSONL(ctx context.Context, path string) ([]model.Record,
 
 	order := []string{}
 	latest := map[string]messageEntry{}
+	upsert := func(msg messageEntry) {
+		if msg.Type == "" || msg.ID == "" {
+			return
+		}
+		if _, seen := latest[msg.ID]; !seen {
+			order = append(order, msg.ID)
+		}
+		latest[msg.ID] = msg
+	}
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 64*1024), 16*1024*1024)
 	for scanner.Scan() {
@@ -117,13 +126,18 @@ func (a *Analyzer) parseJSONL(ctx context.Context, path string) ([]model.Record,
 		if err := json.Unmarshal([]byte(line), &msg); err != nil {
 			continue
 		}
-		if len(msg.Set) > 0 || msg.Type == "" || msg.ID == "" {
+		if len(msg.Set) > 0 {
+			var set struct {
+				Messages []messageEntry `json:"messages"`
+			}
+			if json.Unmarshal(msg.Set, &set) == nil {
+				for _, message := range set.Messages {
+					upsert(message)
+				}
+			}
 			continue
 		}
-		if _, seen := latest[msg.ID]; !seen {
-			order = append(order, msg.ID)
-		}
-		latest[msg.ID] = msg
+		upsert(msg)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, err

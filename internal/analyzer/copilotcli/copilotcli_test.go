@@ -72,3 +72,30 @@ func TestToolArgumentsDoNotOverrideModel(t *testing.T) {
 		t.Fatalf("assistant model = %q, want %q", got, want)
 	}
 }
+
+func TestShutdownMetricsApplyOnlyToCurrentSegment(t *testing.T) {
+	root := t.TempDir()
+	stateDir := filepath.Join(root, "session-state")
+	if err := os.MkdirAll(stateDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(stateDir, "events.jsonl")
+	data := `{"type":"session.start","data":{"sessionId":"s1","context":{"model":"claude-sonnet-4"}}}
+{"type":"user.message","data":{"content":"one"}}
+{"type":"assistant.turn_end","data":{}}
+{"type":"session.shutdown","data":{"modelMetrics":{"claude-sonnet-4":{"usage":{"inputTokens":100,"outputTokens":10}}}}}
+{"type":"user.message","data":{"content":"two"}}
+{"type":"assistant.turn_end","data":{}}
+{"type":"session.shutdown","data":{"modelMetrics":{"claude-sonnet-4":{"usage":{"inputTokens":200,"outputTokens":20}}}}}
+`
+	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	records, err := New(root).Parse(t.Context(), model.Source{Path: path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != 4 || records[1].Tokens.Input != 100 || records[1].Tokens.Output != 10 || records[3].Tokens.Input != 200 || records[3].Tokens.Output != 20 {
+		t.Fatalf("shutdown segments = %+v", records)
+	}
+}

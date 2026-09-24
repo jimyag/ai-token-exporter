@@ -10,6 +10,9 @@ It reads session logs from:
 - Antigravity CLI (`agy`)
 - GitHub Copilot CLI
 - GitHub Copilot Chat sessions from VS Code-compatible editors
+- DeepSeek Harness
+- Pi Agent
+- OpenCode (SQLite and legacy JSON storage)
 
 The exporter keeps an in-memory snapshot and serves it at `GET /metrics`. Scrapes do not read session files from disk.
 
@@ -34,6 +37,9 @@ docker run --rm -p 9108:9108 \
   -v "$HOME/.codex:/home/nonroot/.codex:ro" \
   -v "$HOME/.gemini:/home/nonroot/.gemini:ro" \
   -v "$HOME/.copilot:/home/nonroot/.copilot:ro" \
+  -v "$HOME/.dsh:/home/nonroot/.dsh:ro" \
+  -v "$HOME/.pi:/home/nonroot/.pi:ro" \
+  -v "$HOME/.local/share/opencode:/home/nonroot/.local/share/opencode:ro" \
   -v "$HOME/Library/Application Support:/home/nonroot/.config:ro" \
   ghcr.io/jimyag/ai-token-exporter:latest
 ```
@@ -46,6 +52,9 @@ docker run --rm -p 9108:9108 \
   -v "$HOME/.codex:/home/nonroot/.codex:ro" \
   -v "$HOME/.gemini:/home/nonroot/.gemini:ro" \
   -v "$HOME/.copilot:/home/nonroot/.copilot:ro" \
+  -v "$HOME/.dsh:/home/nonroot/.dsh:ro" \
+  -v "$HOME/.pi:/home/nonroot/.pi:ro" \
+  -v "$HOME/.local/share/opencode:/home/nonroot/.local/share/opencode:ro" \
   -v "$HOME/.config:/home/nonroot/.config:ro" \
   ghcr.io/jimyag/ai-token-exporter:latest
 ```
@@ -76,7 +85,7 @@ task build
 ai-token-exporter \
   --listen=:9108 \
   --scan-interval=30s \
-  --enabled=claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli,agy
+  --enabled=claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli,agy,deepseek_harness,pi_agent,opencode
 ```
 
 All flags are optional. The default listen address is `:9108`, the default scan interval is `30s`, and all supported analyzers are enabled by default.
@@ -103,13 +112,16 @@ Flags can be set with environment variables:
 | --------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `--listen`            | `AI_TOKEN_EXPORTER_LISTEN`            | `:9108`                                                                                                                  |
 | `--scan-interval`     | `AI_TOKEN_EXPORTER_SCAN_INTERVAL`     | `30s`                                                                                                                    |
-| `--enabled`           | `AI_TOKEN_EXPORTER_ENABLED`           | `claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli,agy`                                                        |
+| `--enabled`           | `AI_TOKEN_EXPORTER_ENABLED`           | `claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli,agy,deepseek_harness,pi_agent,opencode`                     |
 | `--claude-dir`        | `AI_TOKEN_EXPORTER_CLAUDE_DIR`        | `~/.claude/projects`                                                                                                     |
 | `--codex-dir`         | `AI_TOKEN_EXPORTER_CODEX_DIR`         | `~/.codex`                                                                                                               |
 | `--copilot-dir`       | `AI_TOKEN_EXPORTER_COPILOT_DIR`       | `~/.copilot`                                                                                                             |
 | `--gemini-dir`        | `AI_TOKEN_EXPORTER_GEMINI_DIR`        | `~/.gemini/tmp`                                                                                                          |
 | `--gemini-config-dir` | `AI_TOKEN_EXPORTER_GEMINI_CONFIG_DIR` | `~/.gemini`                                                                                                              |
 | `--agy-dir`           | `AI_TOKEN_EXPORTER_AGY_DIR`           | `~/.gemini/antigravity-cli/conversations`                                                                                |
+| `--deepseek-dir`      | `AI_TOKEN_EXPORTER_DEEPSEEK_DIR`      | `$DSH_HOME/sessions`, or `~/.dsh/sessions` when `DSH_HOME` is unset                                                     |
+| `--pi-dir`            | `AI_TOKEN_EXPORTER_PI_DIR`            | `~/.pi/agent/sessions`                                                                                                   |
+| `--opencode-dir`      | `AI_TOKEN_EXPORTER_OPENCODE_DIR`      | `~/.local/share/opencode`                                                                                                |
 | `--vscode-config-dir` | `AI_TOKEN_EXPORTER_VSCODE_CONFIG_DIR` | `os.UserConfigDir()`; for example `~/Library/Application Support` on macOS, `~/.config` on Linux, `%APPDATA%` on Windows |
 
 Default source locations:
@@ -120,6 +132,9 @@ Default source locations:
 - Antigravity CLI (`agy`): `~/.gemini/antigravity-cli/conversations/**/*.db`
 - Copilot CLI: `~/.copilot/session-state/**/*.jsonl`, `~/.copilot/history-session-state/**/*.jsonl`
 - GitHub Copilot Chat: `{user config dir}/{Code,Code - Insiders,Cursor,Windsurf,VSCodium,Positron,Antigravity}/User/workspaceStorage/*/chatSessions/*.json`
+- DeepSeek Harness: `$DSH_HOME/sessions/*/*/session.jsonl.zstd` (defaults to `~/.dsh/sessions`)
+- Pi Agent: `~/.pi/agent/sessions/*/*.jsonl`
+- OpenCode: `~/.local/share/opencode/opencode*.db` and `~/.local/share/opencode/storage/message/*/*.json`
 
 ## Metrics
 
@@ -143,7 +158,7 @@ ai_token_exporter_build_info{version,commit}
 
 Label values:
 
-- `tool`: `claude_code`, `codex_cli`, `copilot_cli`, `github_copilot`, `gemini_cli`
+- `tool`: `claude_code`, `codex_cli`, `copilot_cli`, `github_copilot`, `gemini_cli`, `agy`, `deepseek_harness`, `pi_agent`, `opencode`
 - `token_type`: `input`, `output`, `reasoning`, `cache_creation`, `cache_read`, `cached`
 - `role`: `user`, `assistant`
 - `model`: normalized model name, falling back through tool defaults before `unknown`

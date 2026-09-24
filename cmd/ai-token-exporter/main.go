@@ -17,7 +17,10 @@ import (
 	"github.com/jimyag/ai-token-exporter/internal/analyzer/codex"
 	"github.com/jimyag/ai-token-exporter/internal/analyzer/copilotcli"
 	"github.com/jimyag/ai-token-exporter/internal/analyzer/copilotvscode"
+	"github.com/jimyag/ai-token-exporter/internal/analyzer/deepseek"
 	"github.com/jimyag/ai-token-exporter/internal/analyzer/gemini"
+	"github.com/jimyag/ai-token-exporter/internal/analyzer/opencode"
+	"github.com/jimyag/ai-token-exporter/internal/analyzer/pi"
 	"github.com/jimyag/ai-token-exporter/internal/config"
 	"github.com/jimyag/ai-token-exporter/internal/model"
 	"github.com/jimyag/ai-token-exporter/internal/scanner"
@@ -83,6 +86,15 @@ func buildAnalyzers(cfg config.Config) []analyzer.Analyzer {
 	}
 	if cfg.Enabled[model.ToolAgy] {
 		analyzers = append(analyzers, agy.New(cfg.AgyDir))
+	}
+	if cfg.Enabled[model.ToolDeepSeekHarness] {
+		analyzers = append(analyzers, deepseek.New(cfg.DeepSeekDir))
+	}
+	if cfg.Enabled[model.ToolPiAgent] {
+		analyzers = append(analyzers, pi.New(cfg.PiDir))
+	}
+	if cfg.Enabled[model.ToolOpenCode] {
+		analyzers = append(analyzers, opencode.New(cfg.OpenCodeDir))
 	}
 	return analyzers
 }

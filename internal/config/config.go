@@ -19,6 +19,9 @@ type Config struct {
 	GeminiDir       string
 	GeminiConfigDir string
 	AgyDir          string
+	DeepSeekDir     string
+	PiDir           string
+	OpenCodeDir     string
 	VSCodeConfigDir string
 	Version         string
 	Commit          string
@@ -29,13 +32,16 @@ func Default() Config {
 	return Config{
 		Listen:          envString("AI_TOKEN_EXPORTER_LISTEN", ":9108"),
 		ScanInterval:    envDuration("AI_TOKEN_EXPORTER_SCAN_INTERVAL", 30*time.Second),
-		Enabled:         parseEnabled(envString("AI_TOKEN_EXPORTER_ENABLED", "claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli,agy")),
+		Enabled:         parseEnabled(envString("AI_TOKEN_EXPORTER_ENABLED", "claude_code,codex_cli,copilot_cli,github_copilot,gemini_cli,agy,deepseek_harness,pi_agent,opencode")),
 		ClaudeDir:       envString("AI_TOKEN_EXPORTER_CLAUDE_DIR", filepath.Join(home, ".claude", "projects")),
 		CodexDir:        envString("AI_TOKEN_EXPORTER_CODEX_DIR", filepath.Join(home, ".codex")),
 		CopilotDir:      envString("AI_TOKEN_EXPORTER_COPILOT_DIR", filepath.Join(home, ".copilot")),
 		GeminiDir:       envString("AI_TOKEN_EXPORTER_GEMINI_DIR", filepath.Join(home, ".gemini", "tmp")),
 		GeminiConfigDir: envString("AI_TOKEN_EXPORTER_GEMINI_CONFIG_DIR", filepath.Join(home, ".gemini")),
 		AgyDir:          envString("AI_TOKEN_EXPORTER_AGY_DIR", filepath.Join(home, ".gemini", "antigravity-cli", "conversations")),
+		DeepSeekDir:     envString("AI_TOKEN_EXPORTER_DEEPSEEK_DIR", deepSeekSessionsDir(home)),
+		PiDir:           envString("AI_TOKEN_EXPORTER_PI_DIR", filepath.Join(home, ".pi", "agent", "sessions")),
+		OpenCodeDir:     envString("AI_TOKEN_EXPORTER_OPENCODE_DIR", filepath.Join(home, ".local", "share", "opencode")),
 		VSCodeConfigDir: envString("AI_TOKEN_EXPORTER_VSCODE_CONFIG_DIR", ""),
 		Version:         "dev",
 		Commit:          "none",
@@ -64,7 +70,24 @@ func BindFlags(fs *flag.FlagSet, cfg *Config, enabled *string) {
 	fs.StringVar(&cfg.GeminiDir, "gemini-dir", cfg.GeminiDir, "Gemini CLI tmp directory")
 	fs.StringVar(&cfg.GeminiConfigDir, "gemini-config-dir", cfg.GeminiConfigDir, "Gemini CLI config directory")
 	fs.StringVar(&cfg.AgyDir, "agy-dir", cfg.AgyDir, "Antigravity CLI conversations directory")
+	fs.StringVar(&cfg.DeepSeekDir, "deepseek-dir", cfg.DeepSeekDir, "DeepSeek Harness sessions directory")
+	fs.StringVar(&cfg.PiDir, "pi-dir", cfg.PiDir, "Pi Agent sessions directory")
+	fs.StringVar(&cfg.OpenCodeDir, "opencode-dir", cfg.OpenCodeDir, "OpenCode data directory")
 	fs.StringVar(&cfg.VSCodeConfigDir, "vscode-config-dir", cfg.VSCodeConfigDir, "VS Code-compatible editor config directory")
+}
+
+func deepSeekSessionsDir(home string) string {
+	root := strings.TrimSpace(os.Getenv("DSH_HOME"))
+	if root == "" {
+		root = filepath.Join(home, ".dsh")
+	} else if root == "~" {
+		root = home
+	} else if relative, ok := strings.CutPrefix(root, "~/"); ok {
+		root = filepath.Join(home, relative)
+	} else if relative, ok := strings.CutPrefix(root, "~\\"); ok {
+		root = filepath.Join(home, relative)
+	}
+	return filepath.Join(root, "sessions")
 }
 
 func ApplyEnabled(cfg *Config, enabled string) {

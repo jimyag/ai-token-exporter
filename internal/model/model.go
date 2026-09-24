@@ -3,12 +3,15 @@ package model
 import "time"
 
 const (
-	ToolClaudeCode    = "claude_code"
-	ToolCodexCLI      = "codex_cli"
-	ToolCopilotCLI    = "copilot_cli"
-	ToolGitHubCopilot = "github_copilot"
-	ToolGeminiCLI     = "gemini_cli"
-	ToolAgy           = "agy"
+	ToolClaudeCode      = "claude_code"
+	ToolCodexCLI        = "codex_cli"
+	ToolCopilotCLI      = "copilot_cli"
+	ToolGitHubCopilot   = "github_copilot"
+	ToolGeminiCLI       = "gemini_cli"
+	ToolAgy             = "agy"
+	ToolDeepSeekHarness = "deepseek_harness"
+	ToolPiAgent         = "pi_agent"
+	ToolOpenCode        = "opencode"
 
 	RoleUser      = "user"
 	RoleAssistant = "assistant"

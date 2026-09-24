@@ -122,6 +122,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 	sessionID := hash.Sum(sessionRaw)
 	records := []model.Record{}
 	var current *turn
+	segmentStart := 0
 
 	flush := func() {
 		if current == nil {
@@ -251,7 +252,8 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			}
 		case "session.shutdown":
 			flush()
-			applyShutdown(records, extractShutdownMetrics(data))
+			applyShutdown(records[segmentStart:], extractShutdownMetrics(data))
+			segmentStart = len(records)
 		}
 	}
 	flush()

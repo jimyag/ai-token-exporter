@@ -90,3 +90,25 @@ func TestDefaultModelUsesConfigDir(t *testing.T) {
 		t.Fatalf("default model = %q", az.DefaultModel)
 	}
 }
+
+func TestParseJSONLSetMessages(t *testing.T) {
+	root := t.TempDir()
+	chatDir := filepath.Join(root, "project", "chats")
+	if err := os.MkdirAll(chatDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(chatDir, "session.jsonl")
+	data := `{"$set":{"messages":[{"id":"g1","type":"gemini","timestamp":"2026-09-24T00:00:00Z","model":"gemini-2.5-pro","tokens":{"input":10,"output":2}}]}}
+{"id":"g2","type":"gemini","timestamp":"2026-09-24T00:00:01Z","model":"gemini-2.5-pro","tokens":{"input":10,"output":5}}
+`
+	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	records, err := New(root, root).Parse(t.Context(), model.Source{Path: path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != 2 || records[0].Tokens.Output != 2 || records[1].Tokens.Output != 5 {
+		t.Fatalf("set messages = %+v", records)
+	}
+}

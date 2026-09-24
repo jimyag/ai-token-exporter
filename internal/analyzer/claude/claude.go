@@ -78,7 +78,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 	defer file.Close()
 
 	sessionID := hash.Sum(source.Path)
-	seen := map[string]bool{}
+	seen := map[string]int{}
 	var records []model.Record
 
 	scanner := bufio.NewScanner(file)
@@ -107,13 +107,6 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		} else if item.UUID != "" {
 			dedupeKey = source.Path + ":" + item.UUID
 		}
-		if dedupeKey != "" {
-			if seen[dedupeKey] {
-				continue
-			}
-			seen[dedupeKey] = true
-		}
-
 		role := normalizeRole(item.Message.Role)
 		if item.Message.Usage == nil {
 			role = model.RoleUser
@@ -127,7 +120,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			tokens.Cached = tokens.CacheRead
 		}
 
-		records = append(records, model.Record{
+		record := model.Record{
 			Tool:      a.Name(),
 			Model:     analyzer.ResolveModel(item.Message.Model, a.DefaultModel),
 			SessionID: sessionID,
@@ -135,12 +128,30 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			Timestamp: analyzer.ParseTime(item.Timestamp),
 			Tokens:    tokens,
 			ToolCalls: countToolUse(item.Message.Content),
-		})
+		}
+		if index, ok := seen[dedupeKey]; dedupeKey != "" && ok {
+			current := &records[index]
+			current.ToolCalls = max(current.ToolCalls, record.ToolCalls)
+			if record.Tokens.Output > current.Tokens.Output ||
+				record.Tokens.Output == current.Tokens.Output && tokenTotal(record.Tokens) > tokenTotal(current.Tokens) {
+				current.Tokens = record.Tokens
+				current.Timestamp = record.Timestamp
+			}
+			continue
+		}
+		if dedupeKey != "" {
+			seen[dedupeKey] = len(records)
+		}
+		records = append(records, record)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
 	return records, nil
+}
+
+func tokenTotal(tokens model.TokenStats) uint64 {
+	return tokens.Input + tokens.Output + tokens.CacheCreation + tokens.CacheRead
 }
 
 func normalizeRole(role string) string {
