@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"sort"
@@ -303,9 +304,7 @@ func nonEmpty(value, fallback string) string {
 
 func cloneLabels(labels map[string]string) map[string]string {
 	cloned := make(map[string]string, len(labels))
-	for key, value := range labels {
-		cloned[key] = value
-	}
+	maps.Copy(cloned, labels)
 	return cloned
 }
 
@@ -330,7 +329,7 @@ func postVictoriaMetrics(ctx context.Context, url string, body *bytes.Buffer) er
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return fmt.Errorf("victoriametrics import failed: status=%s body=%s", resp.Status, strings.TrimSpace(string(data)))
@@ -359,7 +358,7 @@ func deleteExisting(ctx context.Context, options Options) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return fmt.Errorf("victoriametrics delete failed: status=%s body=%s", resp.Status, strings.TrimSpace(string(data)))
@@ -378,8 +377,8 @@ func inferDeleteURL(importURL string) (string, error) {
 		parsed.RawQuery = ""
 		return parsed.String(), nil
 	}
-	if strings.HasSuffix(parsed.Path, "/api/v1/import/prometheus") {
-		parsed.Path = strings.TrimSuffix(parsed.Path, "/api/v1/import/prometheus") + "/api/v1/admin/tsdb/delete_series"
+	if base, ok := strings.CutSuffix(parsed.Path, "/api/v1/import/prometheus"); ok {
+		parsed.Path = base + "/api/v1/admin/tsdb/delete_series"
 		parsed.RawQuery = ""
 		return parsed.String(), nil
 	}

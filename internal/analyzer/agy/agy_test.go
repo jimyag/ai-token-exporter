@@ -17,7 +17,7 @@ func TestParseSQLiteSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	t.Cleanup(func() { _ = db.Close() })
 
 	if _, err := db.Exec(`CREATE TABLE steps (idx INTEGER, step_type INTEGER, step_payload BLOB)`); err != nil {
 		t.Fatal(err)
@@ -100,6 +100,16 @@ func TestDiscoverFindsDBFiles(t *testing.T) {
 	}
 	if sources[0].Path != dbPath {
 		t.Fatalf("source path = %q, want %q", sources[0].Path, dbPath)
+	}
+}
+
+func TestProtoRejectsOverflow(t *testing.T) {
+	if _, ok := protoTimestamp([]protoField{{Number: 1, Wire: wireVarint, Varint: ^uint64(0)}}); ok {
+		t.Fatal("timestamp with overflowing seconds accepted")
+	}
+	invalidField := concatProto(encodeVarint(((uint64(1)<<29)+1)<<3), []byte{0})
+	if _, ok := protoParse(invalidField); ok {
+		t.Fatal("field number above protobuf limit accepted")
 	}
 }
 

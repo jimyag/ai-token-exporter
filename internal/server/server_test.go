@@ -36,6 +36,9 @@ func TestMetricsEndpointUsesPrometheusTextFormat(t *testing.T) {
 		Commit:             "abc",
 	}}
 	srv := New(":0", provider)
+	if srv.ReadHeaderTimeout != 5*time.Second {
+		t.Fatalf("read header timeout = %s", srv.ReadHeaderTimeout)
+	}
 	req := httptest.NewRequest("GET", "/metrics", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler.ServeHTTP(rec, req)

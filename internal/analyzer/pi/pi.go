@@ -50,7 +50,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	sessionID := hash.Sum(source.Path)
 	var currentModel, currentProvider string

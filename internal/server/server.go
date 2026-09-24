@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/jimyag/ai-token-exporter/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,5 +19,5 @@ func New(addr string, provider metrics.SnapshotProvider) *http.Server {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok\n"))
 	})
-	return &http.Server{Addr: addr, Handler: mux}
+	return &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 }

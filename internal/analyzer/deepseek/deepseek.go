@@ -71,7 +71,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	decoder, err := zstd.NewReader(file, zstd.WithDecoderConcurrency(1))
 	if err != nil {
 		return nil, err
@@ -129,13 +129,16 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 		switch item.Type {
 		case "user/message":
 			if item.Data.Source.Kind == "user" {
-				records = append(records, model.Record{Tool: a.Name(), Model: model.UnknownModel,
-					SessionID: sessionID, Role: model.RoleUser, Timestamp: timestamp})
+				records = append(records, model.Record{
+					Tool: a.Name(), Model: model.UnknownModel,
+					SessionID: sessionID, Role: model.RoleUser, Timestamp: timestamp,
+				})
 			}
 		case "assistant/message":
 			usage := item.Data.Usage
 			assistantSteps[step{item.Data.Turn, item.Data.Step}] = len(records)
-			records = append(records, model.Record{Tool: a.Name(),
+			records = append(records, model.Record{
+				Tool:  a.Name(),
 				Model: analyzer.ResolveModel(item.Data.Message.Source.Model), SessionID: sessionID,
 				Role: model.RoleAssistant, Timestamp: timestamp,
 				Tokens: model.TokenStats{

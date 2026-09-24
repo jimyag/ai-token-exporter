@@ -3,6 +3,7 @@ package deepseek
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/jimyag/ai-token-exporter/internal/model"
@@ -81,8 +82,10 @@ func TestParseKeepsCompleteFrameWhenNextFrameIsTruncated(t *testing.T) {
 	}
 	first := encoder.EncodeAll([]byte("{\"type\":\"user/message\",\"data\":{\"source\":{\"kind\":\"user\"}}}\n"), nil)
 	second := encoder.EncodeAll([]byte("{\"type\":\"assistant/message\"}\n"), nil)
-	encoder.Close()
-	data := append(first, second[:len(second)-2]...)
+	if err := encoder.Close(); err != nil {
+		t.Fatal(err)
+	}
+	data := slices.Concat(first, second[:len(second)-2])
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		t.Fatal(err)
 	}

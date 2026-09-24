@@ -93,11 +93,12 @@ func (a *Analyzer) parseJSON(ctx context.Context, path string) ([]model.Record, 
 }
 
 func (a *Analyzer) parseJSONL(ctx context.Context, path string) ([]model.Record, error) {
+	// #nosec G304 -- paths come from configured local source directories.
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	order := []string{}
 	latest := map[string]messageEntry{}

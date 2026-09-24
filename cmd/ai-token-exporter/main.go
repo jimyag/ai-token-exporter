@@ -48,7 +48,6 @@ func main() {
 	cfg.Commit = commit
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	scn := scanner.New(buildAnalyzers(cfg), cfg.Version, cfg.Commit)
 	go scn.Run(ctx, cfg.ScanInterval)
@@ -63,8 +62,10 @@ func main() {
 
 	log.Printf("ai-token-exporter listening on %s", cfg.Listen)
 	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		stop()
 		log.Fatal(err)
 	}
+	stop()
 }
 
 func buildAnalyzers(cfg config.Config) []analyzer.Analyzer {

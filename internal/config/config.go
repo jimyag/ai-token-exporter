@@ -112,7 +112,7 @@ func envDuration(key string, fallback time.Duration) time.Duration {
 
 func parseEnabled(value string) map[string]bool {
 	enabled := map[string]bool{}
-	for _, item := range strings.Split(value, ",") {
+	for item := range strings.SplitSeq(value, ",") {
 		if item = strings.TrimSpace(item); item != "" {
 			enabled[item] = true
 		}

@@ -27,12 +27,22 @@ func WalkFiles(ctx context.Context, root string, valid func(string) bool) ([]mod
 	if root == "" {
 		return sources, nil
 	}
-	if info, err := os.Stat(root); err != nil || !info.IsDir() {
+	info, err := os.Stat(root)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return sources, nil
+		}
+		return nil, err
+	}
+	if !info.IsDir() {
 		return sources, nil
 	}
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return nil
+			if errors.Is(err, fs.ErrNotExist) {
+				return nil
+			}
+			return err
 		}
 		select {
 		case <-ctx.Done():
@@ -64,10 +74,10 @@ func CountTokens(text string) uint64 {
 		return 0
 	}
 	runes := utf8.RuneCountInString(text)
-	if runes == 0 {
+	if runes <= 0 {
 		return 0
 	}
-	return uint64((runes + 3) / 4)
+	return (uint64(runes) + 3) / 4
 }
 
 func LastPathSegment(value string) string {
@@ -146,6 +156,7 @@ func extractModel(value any, depth int) string {
 }
 
 func ReadJSONFile(path string, target any) error {
+	// #nosec G304 -- paths come from configured local source directories.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -162,6 +173,7 @@ func ReadDefaultModelFromJSON(path string) string {
 }
 
 func ReadDefaultModelFromText(path string) string {
+	// #nosec G304 -- paths come from configured local source directories.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return ""

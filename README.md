@@ -1,6 +1,23 @@
-# ai-token-exporter
+<h1 align="center">ai-token-exporter</h1>
 
-`ai-token-exporter` exposes local AI coding tool token usage as Prometheus metrics.
+<p align="center">Export local AI coding tool token usage as Prometheus metrics.</p>
+
+<p align="center">
+  <a href="https://github.com/jimyag/ai-token-exporter/actions/workflows/check.yaml"><img src="https://github.com/jimyag/ai-token-exporter/actions/workflows/check.yaml/badge.svg" alt="Check"></a>
+  <a href="https://github.com/jimyag/ai-token-exporter/actions/workflows/release.yaml"><img src="https://github.com/jimyag/ai-token-exporter/actions/workflows/release.yaml/badge.svg" alt="Release"></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#configuration">Configuration</a> ·
+  <a href="#metrics">Metrics</a> ·
+  <a href="#grafana">Grafana</a>
+</p>
+
+---
+
+`ai-token-exporter` reads local session logs and exposes an in-memory snapshot at `GET /metrics`. Scrapes do not read session files from disk.
 
 It reads session logs from:
 
@@ -14,7 +31,16 @@ It reads session logs from:
 - Pi Agent
 - OpenCode (SQLite and legacy JSON storage)
 
-The exporter keeps an in-memory snapshot and serves it at `GET /metrics`. Scrapes do not read session files from disk.
+## Quick Start
+
+Download the archive for your platform from [GitHub Releases](https://github.com/jimyag/ai-token-exporter/releases/latest), extract the binary, then run:
+
+```bash
+./ai-token-exporter
+curl localhost:9108/metrics
+```
+
+All supported analyzers are enabled by default. See [Install](#install) for platform examples, [Configuration](#configuration) for source paths and overrides, [Prometheus / VictoriaMetrics Scrape](#prometheus--victoriametrics-scrape) for collection, and [VictoriaMetrics Backfill](#victoriametrics-backfill) for historical data.
 
 ## Install
 
@@ -59,13 +85,17 @@ docker run --rm -p 9108:9108 \
   ghcr.io/jimyag/ai-token-exporter:latest
 ```
 
-### Go Install
+### Source Build
+
+Building from source requires Go 1.27.1 or later.
+
+With Go:
 
 ```bash
 go install github.com/jimyag/ai-token-exporter/cmd/ai-token-exporter@latest
 ```
 
-### Source Build
+Or build a clone:
 
 ```bash
 git clone https://github.com/jimyag/ai-token-exporter.git
@@ -321,3 +351,5 @@ task backfill -- --vm-url=http://localhost:8428/api/v1/import/prometheus
 task docker-build
 task release-snapshot
 ```
+
+CI runs golangci-lint, `task test`, a local build, and release archive checks. Run `task --list-all` for other commands.

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -82,7 +83,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	events := []event{}
 	scanner := bufio.NewScanner(file)
@@ -328,6 +329,9 @@ func number(value any) uint64 {
 	case float64:
 		return uint64(v)
 	case int:
+		if v < 0 {
+			return 0
+		}
 		return uint64(v)
 	case uint64:
 		return v
@@ -337,12 +341,7 @@ func number(value any) uint64 {
 }
 
 func contains(values []string, target string) bool {
-	for _, value := range values {
-		if value == target {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(values, target)
 }
 
 func nonZeroTime(value time.Time) time.Time {

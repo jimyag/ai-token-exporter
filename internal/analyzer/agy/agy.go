@@ -55,7 +55,7 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	if _, err := db.ExecContext(ctx, "PRAGMA busy_timeout=5000"); err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func readGenMetadata(ctx context.Context, db *sql.DB) (map[int]genMetaInfo, erro
 		}
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var idx int
 		var data []byte
@@ -172,7 +172,7 @@ func readSteps(ctx context.Context, db *sql.DB) ([]stepRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var steps []stepRow
 	for rows.Next() {
 		var step stepRow
@@ -268,6 +268,9 @@ func protoTimestamp(fields []protoField) (time.Time, bool) {
 		}
 		switch field.Number {
 		case 1:
+			if field.Varint <= 946684800 || field.Varint >= 4102444800 {
+				return time.Time{}, false
+			}
 			seconds = int64(field.Varint)
 			seenSeconds = true
 		case 2:
@@ -276,7 +279,7 @@ func protoTimestamp(fields []protoField) (time.Time, bool) {
 			return time.Time{}, false
 		}
 	}
-	if !seenSeconds || seconds <= 946684800 || seconds >= 4102444800 || nanos > 999999999 {
+	if !seenSeconds || nanos > 999999999 {
 		return time.Time{}, false
 	}
 	return time.Unix(seconds, int64(nanos)).UTC(), true
@@ -354,6 +357,9 @@ func protoParseDepth(data []byte, depth int) ([]protoField, bool) {
 			return nil, false
 		}
 		data = rest
+		if tag>>3 > (1<<29)-1 {
+			return nil, false
+		}
 		number := uint32(tag >> 3)
 		wire := uint8(tag & 0x7)
 		if number == 0 {
@@ -379,9 +385,8 @@ func protoParseDepth(data []byte, depth int) ([]protoField, bool) {
 			if !ok || uint64(len(rest)) < size {
 				return nil, false
 			}
-			sizeInt := int(size)
-			field.Bytes = rest[:sizeInt]
-			data = rest[sizeInt:]
+			field.Bytes = rest[:size]
+			data = rest[size:]
 			if nested, ok := protoParseDepth(field.Bytes, depth+1); ok && looksLikeMessage(nested) {
 				field.Nested = nested
 			}

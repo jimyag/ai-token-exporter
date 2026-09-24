@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"context"
+	"maps"
 	"os"
 	"path/filepath"
 	"sync"
@@ -270,14 +271,10 @@ func cloneSnapshot(in model.Snapshot) model.Snapshot {
 	for key, agg := range in.Aggregates {
 		copied := agg
 		copied.Messages = make(map[string]uint64, len(agg.Messages))
-		for role, count := range agg.Messages {
-			copied.Messages[role] = count
-		}
+		maps.Copy(copied.Messages, agg.Messages)
 		out.Aggregates[key] = copied
 	}
 	out.Tools = make(map[string]model.ToolSnapshot, len(in.Tools))
-	for tool, stat := range in.Tools {
-		out.Tools[tool] = stat
-	}
+	maps.Copy(out.Tools, in.Tools)
 	return out
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -136,9 +137,10 @@ func (a *Analyzer) Parse(ctx context.Context, source model.Source) ([]model.Reco
 			}
 			var p part
 			if analyzer.ReadJSONFile(filepath.Join(partsDir, entry.Name()), &p) == nil {
-				if p.Type == "tool" {
+				switch p.Type {
+				case "tool":
 					record.ToolCalls++
-				} else if p.Type == "step-finish" {
+				case "step-finish":
 					addTokens(&fallback, tokenStats(p.Tokens))
 				}
 			}
@@ -197,8 +199,7 @@ func openDB(path string) (*sql.DB, error) {
 	}
 	db.SetMaxOpenConns(1)
 	if _, err := db.Exec("PRAGMA busy_timeout=5000"); err != nil {
-		db.Close()
-		return nil, err
+		return nil, errors.Join(err, db.Close())
 	}
 	return db, nil
 }
@@ -208,12 +209,12 @@ func messageIDs(ctx context.Context, path string) (map[string]bool, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	rows, err := db.QueryContext(ctx, "SELECT id FROM message")
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	ids := map[string]bool{}
 	for rows.Next() {
 		var id string
@@ -230,7 +231,7 @@ func (a *Analyzer) parseDB(ctx context.Context, path string) ([]model.Record, er
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	rows, err := db.QueryContext(ctx, "SELECT id, session_id, time_created, data FROM message")
 	if err != nil {
 		return nil, err
@@ -242,8 +243,7 @@ func (a *Analyzer) parseDB(ctx context.Context, path string) ([]model.Record, er
 		var id, sessionID, data string
 		var created int64
 		if err := rows.Scan(&id, &sessionID, &created, &data); err != nil {
-			rows.Close()
-			return nil, err
+			return nil, errors.Join(err, rows.Close())
 		}
 		var msg message
 		if json.Unmarshal([]byte(data), &msg) != nil {
@@ -258,8 +258,7 @@ func (a *Analyzer) parseDB(ctx context.Context, path string) ([]model.Record, er
 			records = append(records, record)
 		}
 	}
-	err = rows.Err()
-	rows.Close()
+	err = errors.Join(rows.Err(), rows.Close())
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +266,7 @@ func (a *Analyzer) parseDB(ctx context.Context, path string) ([]model.Record, er
 	if err != nil {
 		return nil, err
 	}
-	defer parts.Close()
+	defer func() { _ = parts.Close() }()
 	for parts.Next() {
 		var id, data string
 		if err := parts.Scan(&id, &data); err != nil {
@@ -279,9 +278,10 @@ func (a *Analyzer) parseDB(ctx context.Context, path string) ([]model.Record, er
 		}
 		var p part
 		if json.Unmarshal([]byte(data), &p) == nil {
-			if p.Type == "tool" {
+			switch p.Type {
+			case "tool":
 				records[index].ToolCalls++
-			} else if p.Type == "step-finish" {
+			case "step-finish":
 				tokens := fallback[id]
 				addTokens(&tokens, tokenStats(p.Tokens))
 				fallback[id] = tokens

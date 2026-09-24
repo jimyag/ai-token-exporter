@@ -1,6 +1,6 @@
 module github.com/jimyag/ai-token-exporter
 
-go 1.26
+go 1.27.1
 
 require (
 	github.com/jimmicro/version v1.1.0
