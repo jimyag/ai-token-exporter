@@ -314,6 +314,8 @@ Import `dashboard/ai-token-exporter.json` into Grafana. The dashboard includes d
 
 Releases are published when pushing a tag that starts with `v`.
 
+Release notes list commits since the previous tag.
+
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
@@ -336,7 +338,7 @@ goreleaser release --snapshot --clean
 
 ```bash
 go test ./...
-go vet ./...
+golangci-lint run ./...
 ```
 
 With Task:

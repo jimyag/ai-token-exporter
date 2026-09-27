@@ -67,4 +67,4 @@ release:
       name_template: ai-token-exporter-dashboard.json
 
 changelog:
-  use: github-native
+  use: git
