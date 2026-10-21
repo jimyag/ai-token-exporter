@@ -6,8 +6,8 @@ toolchain go1.27.3
 
 require (
 	github.com/jimmicro/version v1.1.0
-	github.com/klauspost/compress v1.18.0
-	github.com/prometheus/client_golang v1.23.2
+	github.com/klauspost/compress v1.20.1
+	github.com/prometheus/client_golang v1.25.0
 	modernc.org/sqlite v1.52.0
 )
 
